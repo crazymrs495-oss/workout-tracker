@@ -1628,7 +1628,7 @@ export default function WorkoutTracker() {
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <Dumbbell size={20} color={C.accent} />
-            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Iron Log</span>
+            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Aesthetic Ascension</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
