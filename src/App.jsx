@@ -227,7 +227,7 @@ const WARMUPS = {
   ]},
 };
 
-const REST_DEFAULT = 90;
+const REST_DEFAULT = 120;
 const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
 
 function todayId() {
