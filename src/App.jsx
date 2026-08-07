@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -1010,11 +1010,24 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll }) {
 }
 
 // ---------- SETTINGS MENU ----------
-function SettingsMenu({ onClose, onSelectHistory, onSelectProgress }) {
+function SettingsMenu({ onClose, onSelectHistory, onSelectProgress, onExport, onImport }) {
+  const [importStatus, setImportStatus] = useState(null); // { ok, msg }
+  const fileInputRef = useRef(null);
+
   const items = [
     { key: "history", label: "History", desc: "Past workouts & weekly summaries", icon: Calendar, onClick: onSelectHistory },
     { key: "progress", label: "Progress", desc: "Strength trends & muscle volume", icon: TrendingUp, onClick: onSelectProgress },
   ];
+
+  const handleFileChosen = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const result = await onImport(file);
+    setImportStatus(result);
+    setTimeout(() => setImportStatus(null), 4000);
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: "#ffffff" }}>
       <div className="px-4 pt-5 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.cardBorder}` }}>
@@ -1048,6 +1061,61 @@ function SettingsMenu({ onClose, onSelectHistory, onSelectProgress }) {
             </button>
           );
         })}
+
+        <div className="text-[11px] uppercase tracking-[0.15em] font-bold mt-5 mb-2 px-1" style={{ color: C.textDim }}>Backup</div>
+        <div className="text-xs mb-3 px-1" style={{ color: C.textFaint }}>
+          One file with everything — history &amp; progress. Export it here, then Import it on your new phone or browser.
+        </div>
+
+        <div className="flex gap-2.5">
+          <button
+            onClick={onExport}
+            className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm transition active:scale-[0.98] relative overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, #a855f7 0%, #7e22ce 55%, #5b1596 100%)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#ffffff",
+              boxShadow: "0 10px 24px rgba(126,34,206,0.4), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -8px 14px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0"
+              style={{ height: "55%", background: "linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.08) 65%, rgba(255,255,255,0) 100%)", borderRadius: "16px 16px 50% 50% / 16px 16px 10px 10px" }}
+            />
+            <Download size={16} color="#ffffff" className="relative" />
+            <span className="relative">Export</span>
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm transition active:scale-[0.98] relative overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, #3b82f6 0%, #1d4ed8 55%, #1638a3 100%)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#ffffff",
+              boxShadow: "0 10px 24px rgba(29,78,216,0.4), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -8px 14px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0"
+              style={{ height: "55%", background: "linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.08) 65%, rgba(255,255,255,0) 100%)", borderRadius: "16px 16px 50% 50% / 16px 16px 10px 10px" }}
+            />
+            <Upload size={16} color="#ffffff" className="relative" />
+            <span className="relative">Import</span>
+          </button>
+          <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleFileChosen} />
+        </div>
+
+        {importStatus && (
+          <div
+            className="text-xs font-semibold mt-3 px-3 py-2.5 rounded-xl"
+            style={importStatus.ok
+              ? { backgroundColor: "#eef7ee", border: "1px solid #bfe3bf", color: "#1e7a34" }
+              : { backgroundColor: "#fdecec", border: "1px solid #f3bcbc", color: "#b3261e" }}
+          >
+            {importStatus.msg}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1292,7 +1360,7 @@ export default function WorkoutTracker() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await storage.get("history", false);
+        const res = await storage.get("history");
         if (!cancelled) setHistory(res ? JSON.parse(res.value) : []);
       } catch (e) {
         if (!cancelled) setHistory([]);
@@ -1305,7 +1373,7 @@ export default function WorkoutTracker() {
   // Persist the whole history array whenever it changes
   useEffect(() => {
     if (!historyLoaded) return;
-    storage.set("history", JSON.stringify(history), false).catch(() => {});
+    storage.set("history", JSON.stringify(history)).catch(() => {});
   }, [history, historyLoaded]);
 
   // Hydrate the on-screen session (logs/sets/warmup/timer) for the active day from history + load that day's exercise order
@@ -1316,7 +1384,7 @@ export default function WorkoutTracker() {
     (async () => {
       let orderRes = null;
       try {
-        orderRes = await storage.get(orderKey, false);
+        orderRes = await storage.get(orderKey);
       } catch (e) {}
       if (cancelled) return;
       const rec = historyRef.current.find((r) => r.id === `${activeDay}:${todayStr}`);
@@ -1371,7 +1439,7 @@ export default function WorkoutTracker() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await storage.get("streakPauses", false);
+        const res = await storage.get("streakPauses");
         setPausedDates(res ? JSON.parse(res.value) : []);
       } catch (e) {
         setPausedDates([]);
@@ -1387,7 +1455,7 @@ export default function WorkoutTracker() {
       const results = await Promise.all(
         allExIds.map(async (id) => {
           try {
-            const res = await storage.get(`prBaseline:${id}`, false);
+            const res = await storage.get(`prBaseline:${id}`);
             return res ? [id, JSON.parse(res.value)] : null;
           } catch (e) {
             return null;
@@ -1436,7 +1504,7 @@ export default function WorkoutTracker() {
   const togglePauseToday = useCallback(async () => {
     setPausedDates((prev) => {
       const next = isTodayPaused ? prev.filter((d) => d !== todayStr) : [...prev, todayStr];
-      storage.set("streakPauses", JSON.stringify(next), false).catch(() => {});
+      storage.set("streakPauses", JSON.stringify(next)).catch(() => {});
       return next;
     });
   }, [isTodayPaused, todayStr]);
@@ -1517,7 +1585,7 @@ export default function WorkoutTracker() {
       const next = [...current];
       [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
       const nextOrder = { ...prev, [group.name]: next };
-      storage.set(orderKey, JSON.stringify(nextOrder), false).catch(() => {});
+      storage.set(orderKey, JSON.stringify(nextOrder)).catch(() => {});
       return nextOrder;
     });
   }, [orderKey]);
@@ -1537,6 +1605,56 @@ export default function WorkoutTracker() {
     setSetCounts({});
     setWarmupDone({});
     sessionBestRef.current = {};
+  }, []);
+
+  // ---- Backup / restore (single file covers History + Progress, since Progress is derived from history) ----
+  const exportData = useCallback(() => {
+    const payload = {
+      app: "aesthetic-ascension-trakd",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      history,
+      prBaselines,
+      streakPauses: pausedDates,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aesthetic-ascension-trakd-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [history, prBaselines, pausedDates]);
+
+  const importData = useCallback(async (file) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const importedHistory = Array.isArray(parsed.history) ? parsed.history : null;
+      if (!importedHistory) return { ok: false, msg: "That file doesn't look like a workout backup." };
+
+      setHistory((prev) => {
+        const map = new Map(prev.map((r) => [r.id, r]));
+        importedHistory.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+        return Array.from(map.values());
+      });
+
+      if (parsed.prBaselines && typeof parsed.prBaselines === "object") {
+        setPrBaselines((prev) => ({ ...prev, ...parsed.prBaselines }));
+        Object.entries(parsed.prBaselines).forEach(([id, val]) => {
+          storage.set(`prBaseline:${id}`, JSON.stringify(val)).catch(() => {});
+        });
+      }
+      if (Array.isArray(parsed.streakPauses)) {
+        setPausedDates((prev) => Array.from(new Set([...prev, ...parsed.streakPauses])));
+      }
+
+      return { ok: true, msg: `Imported ${importedHistory.length} workout${importedHistory.length === 1 ? "" : "s"}.` };
+    } catch (e) {
+      return { ok: false, msg: "Couldn't read that file — make sure it's an unmodified export." };
+    }
   }, []);
 
   const totalSets = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => a + getCount(e), 0), 0);
@@ -1586,7 +1704,7 @@ export default function WorkoutTracker() {
         }
         if (best) {
           newBaselines[ex.id] = best;
-          baselineWrites.push(storage.set(`prBaseline:${ex.id}`, JSON.stringify(best), false).catch(() => {}));
+          baselineWrites.push(storage.set(`prBaseline:${ex.id}`, JSON.stringify(best)).catch(() => {}));
         }
       });
     });
@@ -1628,7 +1746,7 @@ export default function WorkoutTracker() {
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <Dumbbell size={20} color={C.accent} />
-            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Aesthetic Ascension</span>
+            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Aesthetic Ascension Trakd</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -1795,6 +1913,8 @@ export default function WorkoutTracker() {
           onClose={() => setShowSettingsMenu(false)}
           onSelectHistory={() => { setShowSettingsMenu(false); setShowHistory(true); }}
           onSelectProgress={() => { setShowSettingsMenu(false); setShowProgress(true); }}
+          onExport={exportData}
+          onImport={importData}
         />
       )}
 

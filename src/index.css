@@ -14,12 +14,6 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* Hides scrollbars on the horizontally-scrolling day picker while staying
-   scrollable (also set inline via style={{ scrollbarWidth: "none" }}). */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
