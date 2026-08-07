@@ -1,9 +1,8 @@
-# Aesthetic Ascension — Workout Tracker
+# Aesthetic Ascension Trakd
 
-A Vite + React workout tracker. All data (workout history, streaks, PRs,
-exercise-order settings, in-progress session state) is stored in the
-browser's `localStorage`, so it persists across reloads on the same device
-with no backend required.
+A minimalist black & white workout tracker built with React + Vite. All workout
+history, streaks, PRs, exercise ordering, and progress persist locally in the
+browser via `localStorage` — no backend or account required.
 
 ## Run locally
 
@@ -12,29 +11,34 @@ npm install
 npm run dev
 ```
 
-Then open the URL Vite prints (usually http://localhost:5173).
+Then open the printed local URL (usually `http://localhost:5173`).
 
 ## Build for production
 
 ```bash
 npm run build
-npm run preview   # optional local check of the production build
+npm run preview   # optional: preview the production build locally
 ```
 
 ## Deploy to Vercel
 
-1. Push this folder to a GitHub repo (or run `vercel` from inside it with
-   the [Vercel CLI](https://vercel.com/docs/cli)).
-2. Import the repo in the Vercel dashboard. Vercel auto-detects Vite; the
-   included `vercel.json` also pins the build command (`npm run build`) and
-   output directory (`dist`).
-3. Deploy — no environment variables or backend services are needed.
+1. Push this project to a GitHub/GitLab/Bitbucket repo (or use the Vercel CLI:
+   `npx vercel` from this folder).
+2. In Vercel, import the repo. It will auto-detect the Vite framework preset:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+3. Deploy. No environment variables are required.
 
-## Notes
+## Data & persistence
 
-- Storage: `src/lib/storage.js` implements a small async
-  get/set/delete/list API backed by `localStorage` (namespaced under
-  `iron-log:`), as a drop-in for the `window.storage` calls the original
-  component used.
-- Everything else — timers, sound effects (Web Audio API), charts
-  (Recharts), icons (lucide-react) — runs entirely client-side.
+All persistence goes through `src/lib/storage.js`, a small `localStorage`
+wrapper (namespaced under the `aat:` prefix) that keeps the same async
+`get`/`set` shape the app was originally built against. This covers:
+
+- Full workout history (`history`)
+- Per-day exercise ordering (`orderCfg:<dayId>`)
+- Streak pause dates (`streakPauses`)
+- PR baselines per exercise (`prBaseline:<exerciseId>`)
+
+Since it's `localStorage`, data is per-browser/per-device. Use the in-app
+Export/Import (Settings menu) to back up or move data between devices.
