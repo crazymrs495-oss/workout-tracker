@@ -1,4 +1,4 @@
-# Iron Log — Workout Tracker
+# Aesthetic Ascension — Workout Tracker
 
 A Vite + React workout tracker. All data (workout history, streaks, PRs,
 exercise-order settings, in-progress session state) is stored in the
