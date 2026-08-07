@@ -1610,7 +1610,7 @@ export default function WorkoutTracker() {
   // ---- Backup / restore (single file covers History + Progress, since Progress is derived from history) ----
   const exportData = useCallback(() => {
     const payload = {
-      app: "aesthetic-ascension-trakd",
+      app: "trakd",
       version: 1,
       exportedAt: new Date().toISOString(),
       history,
@@ -1621,7 +1621,7 @@ export default function WorkoutTracker() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `aesthetic-ascension-trakd-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `trakd-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1746,7 +1746,7 @@ export default function WorkoutTracker() {
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <Dumbbell size={20} color={C.accent} />
-            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Aesthetic Ascension Trakd</span>
+            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Trakd</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
