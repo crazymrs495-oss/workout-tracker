@@ -22,6 +22,18 @@ const C = {
   danger: "#4a4a4a",
 };
 
+// Fixed color per muscle group — used for the volume donut, its legend, and the weekly bars
+const MUSCLE_COLORS = {
+  Chest: "#C62828",
+  Triceps: "#EF6C00",
+  Shoulders: "#F9A825",
+  Back: "#1565C0",
+  Biceps: "#7B1FA2",
+  Legs: "#2E7D32",
+  Abs: "#00838F",
+};
+const MUSCLE_ORDER = ["Chest", "Triceps", "Shoulders", "Back", "Biceps", "Legs", "Abs"];
+
 // ---------- SOUND ----------
 let sharedCtx = null;
 function getAudioCtx() {
@@ -227,11 +239,20 @@ const WARMUPS = {
   ]},
 };
 
-const REST_DEFAULT = 120;
+const REST_DEFAULT = 90;
 const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
 
 function todayId() {
   return WEEKDAY_MAP[new Date().getDay()] || "push1";
+}
+// Local calendar-day string (YYYY-MM-DD) — NOT toISOString(), which is UTC and
+// silently shifts to the wrong day for anyone not sitting at UTC+0, especially
+// during an evening workout when local and UTC dates disagree.
+function localDateStr(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 function fmtTime(s) {
   const m = Math.floor(s / 60);
@@ -808,7 +829,7 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll }) {
   const entries = useMemo(() => buildHistoryEntries(history), [history]);
 
   const fmtDate = (d) => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateStr();
     if (d === today) return "Today";
     const dt = new Date(d + "T00:00:00");
     return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -1122,6 +1143,74 @@ function SettingsMenu({ onClose, onSelectHistory, onSelectProgress, onExport, on
 }
 
 // ---------- PROGRESS MODAL ----------
+function MuscleVolumeDonut({ weeklyVolume }) {
+  const size = 160;
+  const stroke = 16;
+  const r = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+
+  const total = Object.values(weeklyVolume).reduce((a, b) => a + b, 0);
+  const segments = MUSCLE_ORDER
+    .filter((name) => weeklyVolume[name] > 0)
+    .map((name) => ({ name, value: weeklyVolume[name], color: MUSCLE_COLORS[name] }));
+
+  let offsetSoFar = 0;
+  const arcs = segments.map((seg) => {
+    const frac = total > 0 ? seg.value / total : 0;
+    const len = frac * circumference;
+    const arc = { ...seg, len, offset: offsetSoFar };
+    offsetSoFar += len;
+    return arc;
+  });
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.chipBg} strokeWidth={stroke} />
+          {arcs.map((arc) => (
+            <circle
+              key={arc.name}
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke={arc.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${arc.len} ${circumference - arc.len}`}
+              strokeDashoffset={-arc.offset}
+              strokeLinecap={arcs.length > 1 ? "butt" : "round"}
+              transform={`rotate(-90 ${cx} ${cy})`}
+            />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg font-bold tabular-nums" style={{ color: C.text }}>
+            {Math.round(total).toLocaleString()}
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textFaint }}>
+            kg vol
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 mt-4">
+        {MUSCLE_ORDER.map((name) => (
+          <div key={name} className="flex items-center gap-1.5">
+            <span
+              className="inline-block rounded-[2px]"
+              style={{ width: 8, height: 8, backgroundColor: MUSCLE_COLORS[name] }}
+            />
+            <span className="text-[11px] font-semibold" style={{ color: C.textDim }}>{name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProgressModal({ onClose, history }) {
   const [subtab, setSubtab] = useState("strength");
   const [exerciseFilter, setExerciseFilter] = useState(null);
@@ -1181,7 +1270,7 @@ function ProgressModal({ onClose, history }) {
   const weeklyVolume = useMemo(() => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+    const weekAgoStr = localDateStr(weekAgo);
     const result = {};
     entries.filter((e) => e.date >= weekAgoStr).forEach((e) => {
       e.groups.forEach((g) => {
@@ -1297,20 +1386,29 @@ function ProgressModal({ onClose, history }) {
         {subtab === "volume" && (
           <div className="rounded-2xl p-4" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
             <div className="text-sm font-bold mb-3" style={{ color: C.text }}>Weekly Volume by Muscle</div>
-            {Object.keys(weeklyVolume).length === 0 && (
+            {Object.keys(weeklyVolume).length === 0 ? (
               <div className="text-xs" style={{ color: C.textFaint }}>No data yet this week.</div>
+            ) : (
+              <MuscleVolumeDonut weeklyVolume={weeklyVolume} />
             )}
-            {Object.entries(weeklyVolume).sort((a, b) => b[1] - a[1]).map(([name, v]) => (
-              <div key={name} className="mb-3">
-                <div className="flex items-center justify-between text-xs font-semibold mb-1" style={{ color: C.text }}>
-                  <span>{name}</span>
-                  <span className="tabular-nums">{Math.round(v).toLocaleString()}kg</span>
-                </div>
-                <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: C.chipBg }}>
-                  <div className="h-full rounded-full" style={{ width: `${(v / maxWeeklyVolume) * 100}%`, backgroundColor: C.accent }} />
-                </div>
+            {Object.keys(weeklyVolume).length > 0 && (
+              <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${C.rowBorder}` }}>
+                {Object.entries(weeklyVolume).sort((a, b) => b[1] - a[1]).map(([name, v]) => (
+                  <div key={name} className="mb-3">
+                    <div className="flex items-center justify-between text-xs font-semibold mb-1" style={{ color: C.text }}>
+                      <span className="flex items-center gap-1.5">
+                        <span className="inline-block rounded-[2px]" style={{ width: 8, height: 8, backgroundColor: MUSCLE_COLORS[name] || C.accent }} />
+                        {name}
+                      </span>
+                      <span className="tabular-nums">{Math.round(v).toLocaleString()}kg</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: C.chipBg }}>
+                      <div className="h-full rounded-full" style={{ width: `${(v / maxWeeklyVolume) * 100}%`, backgroundColor: MUSCLE_COLORS[name] || C.accent }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
@@ -1346,7 +1444,7 @@ export default function WorkoutTracker() {
   const sessionBestRef = useRef({}); // { exId: {weight, reps} } best achieved so far THIS live session
 
   const day = PROGRAM.find((d) => d.id === activeDay);
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = localDateStr();
   const orderKey = `orderCfg:${activeDay}`;
   const recordId = `${activeDay}:${todayStr}`;
 
@@ -1473,7 +1571,7 @@ export default function WorkoutTracker() {
     let cursor = new Date();
     let isToday = true;
     for (let i = 0; i < 400; i++) {
-      const dateStr = cursor.toISOString().slice(0, 10);
+      const dateStr = localDateStr(cursor);
       const dow = cursor.getDay();
       const isSunday = dow === 0;
       const isPaused = pausedList.includes(dateStr);
@@ -1610,7 +1708,7 @@ export default function WorkoutTracker() {
   // ---- Backup / restore (single file covers History + Progress, since Progress is derived from history) ----
   const exportData = useCallback(() => {
     const payload = {
-      app: "trakd",
+      app: "aesthetic-ascension-trakd",
       version: 1,
       exportedAt: new Date().toISOString(),
       history,
@@ -1621,7 +1719,7 @@ export default function WorkoutTracker() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `trakd-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `aesthetic-ascension-trakd-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1746,7 +1844,7 @@ export default function WorkoutTracker() {
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <Dumbbell size={20} color={C.accent} />
-            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Trakd</span>
+            <span className="text-[11px] tracking-[0.2em] uppercase font-bold" style={{ color: C.textFaint }}>Aesthetic Ascension Trakd</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
