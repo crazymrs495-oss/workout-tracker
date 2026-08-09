@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -109,7 +109,7 @@ function playPRSound() {
 // ---------- DATA ----------
 const PROGRAM = [
   {
-    id: "push1", day: "Monday", title: "Push 1", warmupKey: "push",
+    id: "push1", day: "Monday", title: "Push 1 + Abs", warmupKey: "push",
     groups: [
       { name: "Chest", exercises: [
         { id: "p1-fb", name: "Flat Bench Press", sub: "PR Maxxing", sets: 1, reps: "—" },
@@ -125,6 +125,10 @@ const PROGRAM = [
       { name: "Triceps", exercises: [
         { id: "p1-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
+      ]},
+      { name: "Abs", exercises: [
+        { id: "p1-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
+        { id: "p1-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
       ]},
     ],
   },
@@ -147,7 +151,10 @@ const PROGRAM = [
   {
     id: "legs", day: "Wednesday", title: "Legs + Abs", warmupKey: "legs",
     groups: [
-      { name: "Abs", exercises: [{ id: "lg-cc", name: "Cable Crunch", sets: 3, reps: "8-10" }] },
+      { name: "Abs", exercises: [
+        { id: "lg-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
+        { id: "lg-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
+      ]},
       { name: "Legs", exercises: [
         { id: "lg-lp", name: "Leg Press", sets: 3, reps: "8-10" },
         { id: "lg-le", name: "Leg Extension", sets: 3, reps: "8-10" },
@@ -177,7 +184,7 @@ const PROGRAM = [
     ],
   },
   {
-    id: "pull2", day: "Friday", title: "Pull 2", warmupKey: "pull",
+    id: "pull2", day: "Friday", title: "Pull 2 + Abs", warmupKey: "pull",
     groups: [
       { name: "Back", exercises: [
         { id: "pl2-wpd", name: "Wide Pull Down", sets: 3, reps: "8-10" },
@@ -190,6 +197,10 @@ const PROGRAM = [
         { id: "pl2-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
         { id: "pl2-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
         { id: "pl2-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
+      ]},
+      { name: "Abs", exercises: [
+        { id: "pl2-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
+        { id: "pl2-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
       ]},
     ],
   },
@@ -821,10 +832,11 @@ function FinishBar({ state, elapsedSeconds, volume, onFinish, onReset }) {
 }
 
 // ---------- HISTORY MODAL ----------
-function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll }) {
+function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat }) {
   const [expanded, setExpanded] = useState(null);
   const [confirmDeleteKey, setConfirmDeleteKey] = useState(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmRepeatKey, setConfirmRepeatKey] = useState(null);
 
   const entries = useMemo(() => buildHistoryEntries(history), [history]);
 
@@ -842,6 +854,10 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll }) {
   const deleteAll = () => {
     onDeleteAll();
     setConfirmDeleteAll(false);
+  };
+  const repeatOne = (key) => {
+    onRepeat(key);
+    setConfirmRepeatKey(null);
   };
 
   // Weekly summary aggregation
@@ -956,13 +972,33 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll }) {
                   </div>
                 </button>
                 <button
+                  onClick={() => setConfirmRepeatKey(e.key)}
+                  className="ml-2 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition active:scale-95"
+                  style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
+                  title="Repeat this workout's exercises & sets"
+                >
+                  <Repeat size={13} color={C.text} />
+                </button>
+                <button
                   onClick={() => setConfirmDeleteKey(e.key)}
-                  className="ml-3 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition active:scale-95"
+                  className="ml-2 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition active:scale-95"
                   style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
                 >
                   <Trash2 size={13} color={C.danger} />
                 </button>
               </div>
+
+              {confirmRepeatKey === e.key && (
+                <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "rgba(17,17,17,0.04)", borderTop: `1px solid ${C.cardBorder}` }}>
+                  <span className="text-xs font-semibold" style={{ color: C.text }}>
+                    Start today's {e.dayTitle} with these same exercises &amp; sets?
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setConfirmRepeatKey(null)} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: C.chipBg, color: C.textDim }}>Cancel</button>
+                    <button onClick={() => repeatOne(e.key)} className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: C.accent, color: "#ffffff" }}>Repeat</button>
+                  </div>
+                </div>
+              )}
 
               {confirming && (
                 <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "rgba(220,38,38,0.06)", borderTop: `1px solid ${C.cardBorder}` }}>
@@ -1442,6 +1478,8 @@ export default function WorkoutTracker() {
   const [prBaselines, setPrBaselines] = useState({}); // { exId: {weight, reps} }
   const [prToast, setPrToast] = useState(null);
   const sessionBestRef = useRef({}); // { exId: {weight, reps} } best achieved so far THIS live session
+  const pendingRepeatRef = useRef(null); // { dayId, order, setCounts } queued by "Repeat" in History
+  const [repeatToken, setRepeatToken] = useState(0);
 
   const day = PROGRAM.find((d) => d.id === activeDay);
   const todayStr = localDateStr();
@@ -1500,12 +1538,28 @@ export default function WorkoutTracker() {
         setSessionStart(null); setSessionEnd(null); setFinished(false);
         setSavedVolume(0); setSavedDuration(0);
       }
-      setOrder(orderRes ? JSON.parse(orderRes.value) : {});
+      if (pendingRepeatRef.current && pendingRepeatRef.current.dayId === activeDay) {
+        // A "Repeat this workout" action from History overrides today's structure:
+        // same exercises, same order, same set counts — but fresh (blank) weights/reps.
+        const { order: repOrder, setCounts: repCounts } = pendingRepeatRef.current;
+        setOrder(repOrder);
+        setSetCounts(repCounts);
+        setLogs({});
+        setWarmupDone({});
+        setSessionStart(null);
+        setSessionEnd(null);
+        setFinished(false);
+        setSavedVolume(0);
+        setSavedDuration(0);
+        pendingRepeatRef.current = null;
+      } else {
+        setOrder(orderRes ? JSON.parse(orderRes.value) : {});
+      }
       setLoaded(true);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDay, historyLoaded]);
+  }, [activeDay, historyLoaded, repeatToken]);
 
   // Live autosave of in-progress data into the history array (safety net) — does not mark as finished/permanent
   useEffect(() => {
@@ -1687,6 +1741,35 @@ export default function WorkoutTracker() {
       return nextOrder;
     });
   }, [orderKey]);
+
+  // "Repeat" from History: reproduce a past session's exact exercises (in order) and set counts —
+  // weights/reps are intentionally left blank so it's a fresh log, not a copy of old numbers.
+  const repeatWorkout = useCallback((recId) => {
+    const rec = historyRef.current.find((r) => r.id === recId);
+    if (!rec) return;
+    const dayDef = PROGRAM.find((d) => d.id === rec.dayId);
+    if (!dayDef) return;
+
+    const newOrder = {};
+    const newSetCounts = {};
+    dayDef.groups.forEach((g) => {
+      const baseIds = g.exercises.map((e) => e.id);
+      const savedIds = (rec.order && rec.order[g.name]) || baseIds;
+      const keptIds = savedIds.filter((id) => baseIds.includes(id));
+      const missingIds = baseIds.filter((id) => !keptIds.includes(id)); // exercises added to the template since that session
+      const finalIds = [...keptIds, ...missingIds];
+      newOrder[g.name] = finalIds;
+      finalIds.forEach((id) => {
+        const ex = g.exercises.find((e) => e.id === id);
+        newSetCounts[id] = rec.setCounts?.[id] ?? ex.sets;
+      });
+    });
+
+    pendingRepeatRef.current = { dayId: rec.dayId, order: newOrder, setCounts: newSetCounts };
+    setShowHistory(false);
+    setActiveDay(rec.dayId);
+    setRepeatToken((t) => t + 1);
+  }, []);
 
   const startSession = useCallback(() => {
     setSessionStart(Date.now());
@@ -2022,6 +2105,7 @@ export default function WorkoutTracker() {
           history={history}
           onDeleteOne={(id) => setHistory((prev) => prev.filter((r) => r.id !== id))}
           onDeleteAll={() => setHistory([])}
+          onRepeat={repeatWorkout}
         />
       )}
       {showProgress && <ProgressModal onClose={() => setShowProgress(false)} history={history} />}
