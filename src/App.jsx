@@ -1247,9 +1247,57 @@ function MuscleVolumeDonut({ weeklyVolume }) {
   );
 }
 
-function ProgressModal({ onClose, history }) {
+function ProgressModal({ onClose, history, weightLog, onLogWeight }) {
   const [subtab, setSubtab] = useState("strength");
   const [exerciseFilter, setExerciseFilter] = useState(null);
+  const [weightInput, setWeightInput] = useState("");
+  const [calorieWeightInput, setCalorieWeightInput] = useState("");
+
+  const todayStr = localDateStr();
+  const todaysWeightEntry = useMemo(
+    () => (weightLog || []).find((w) => w.date === todayStr),
+    [weightLog, todayStr]
+  );
+
+  // Prefill the calorie calculator with the most recent logged weight
+  const latestWeightEntry = useMemo(() => {
+    if (!weightLog || weightLog.length === 0) return null;
+    return [...weightLog].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  }, [weightLog]);
+
+  useEffect(() => {
+    if (latestWeightEntry && !calorieWeightInput) {
+      setCalorieWeightInput(String(latestWeightEntry.weightKg));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestWeightEntry]);
+
+  const monthlyWeightData = useMemo(() => {
+    if (!weightLog || weightLog.length === 0) return [];
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const monthAgoStr = localDateStr(monthAgo);
+    return [...weightLog]
+      .filter((w) => w.date >= monthAgoStr)
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+      .map((w) => ({
+        date: w.date,
+        weightKg: w.weightKg,
+        label: new Date(w.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      }));
+  }, [weightLog]);
+
+  const calorieWeightNum = parseFloat(calorieWeightInput) || 0;
+  const calorieLbs = calorieWeightNum * 2.20462;
+  const maintenanceCalories = calorieLbs * 18;
+  const targetCalories = maintenanceCalories - maintenanceCalories * 0.2;
+
+  const handleLogWeight = () => {
+    const val = parseFloat(weightInput);
+    if (!val || val <= 0) return;
+    onLogWeight(val);
+    setWeightInput("");
+  };
 
   const entries = useMemo(() => buildHistoryEntries(history), [history]);
 
@@ -1331,7 +1379,7 @@ function ProgressModal({ onClose, history }) {
 
       <div className="px-4 pt-4">
         <div className="flex gap-1.5">
-          {[{ id: "strength", label: "Strength" }, { id: "volume", label: "Volume" }].map((s) => {
+          {[{ id: "strength", label: "Strength" }, { id: "volume", label: "Volume" }, { id: "weight", label: "Weight" }].map((s) => {
             const active = subtab === s.id;
             return (
               <button
@@ -1447,6 +1495,81 @@ function ProgressModal({ onClose, history }) {
             )}
           </div>
         )}
+
+        {subtab === "weight" && (
+          <div className="space-y-4">
+            {/* Daily weight entry */}
+            <div className="rounded-2xl p-4" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
+              <div className="text-sm font-bold mb-3" style={{ color: C.text }}>Log Today's Weight</div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" inputMode="decimal" placeholder="kg"
+                  value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
+                  className="flex-1 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ backgroundColor: C.inputBg, border: `1px solid ${C.inputBorder}`, color: C.text }}
+                />
+                <button
+                  onClick={handleLogWeight}
+                  className="px-4 py-2.5 rounded-lg text-xs font-bold transition active:scale-95"
+                  style={{ backgroundColor: C.accent, color: "#ffffff" }}
+                >
+                  Log
+                </button>
+              </div>
+              {todaysWeightEntry && (
+                <div className="text-[11px] mt-2" style={{ color: C.textFaint }}>
+                  Logged today: <span className="font-bold" style={{ color: C.textDim }}>{todaysWeightEntry.weightKg}kg</span>
+                </div>
+              )}
+            </div>
+
+            {/* Monthly weight trend graph */}
+            <div className="rounded-2xl p-4" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
+              <div className="text-sm font-bold mb-3" style={{ color: C.text }}>Monthly Weight Trend</div>
+              {monthlyWeightData.length > 1 ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart data={monthlyWeightData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.rowBorder} />
+                    <XAxis dataKey="label" fontSize={10} tick={{ fill: C.textFaint }} />
+                    <YAxis fontSize={10} tick={{ fill: C.textFaint }} domain={["auto", "auto"]} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${C.cardBorder}` }} />
+                    <Line type="monotone" dataKey="weightKg" stroke={C.accent} strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-xs" style={{ color: C.textFaint }}>Log your weight a couple more times to see the trend.</div>
+              )}
+            </div>
+
+            {/* Calorie calculator */}
+            <div className="rounded-2xl p-4" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
+              <div className="text-sm font-bold mb-1" style={{ color: C.text }}>Calorie Calculator</div>
+              <div className="text-[11px] mb-3" style={{ color: C.textFaint }}>Maintenance = weight (lbs) × 18 · Target = maintenance − 20%</div>
+              <input
+                type="number" inputMode="decimal" placeholder="Weight in kg"
+                value={calorieWeightInput} onChange={(e) => setCalorieWeightInput(e.target.value)}
+                className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none mb-3"
+                style={{ backgroundColor: C.inputBg, border: `1px solid ${C.inputBorder}`, color: C.text }}
+              />
+              {calorieWeightNum > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl p-3" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+                    <div className="text-[9px] uppercase tracking-wide" style={{ color: C.textFaint }}>Maintenance</div>
+                    <div className="text-lg font-black tabular-nums" style={{ color: C.text }}>{Math.round(maintenanceCalories).toLocaleString()}</div>
+                    <div className="text-[9px]" style={{ color: C.textFaint }}>kcal/day</div>
+                  </div>
+                  <div className="rounded-xl p-3" style={{ backgroundColor: C.accent, border: `1px solid ${C.accent}` }}>
+                    <div className="text-[9px] uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.7)" }}>Target</div>
+                    <div className="text-lg font-black tabular-nums" style={{ color: "#ffffff" }}>{Math.round(targetCalories).toLocaleString()}</div>
+                    <div className="text-[9px]" style={{ color: "rgba(255,255,255,0.7)" }}>kcal/day</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs" style={{ color: C.textFaint }}>Enter your weight to calculate your calories.</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1511,6 +1634,40 @@ export default function WorkoutTracker() {
     if (!historyLoaded) return;
     storage.set("history", JSON.stringify(history)).catch(() => {});
   }, [history, historyLoaded]);
+
+  // ---- Body weight log (date + kg entries, used by the Weight tab in Progress) ----
+  const [weightLog, setWeightLog] = useState([]);
+  const [weightLogLoaded, setWeightLogLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await storage.get("weightLog");
+        if (!cancelled) setWeightLog(res ? JSON.parse(res.value) : []);
+      } catch (e) {
+        if (!cancelled) setWeightLog([]);
+      }
+      if (!cancelled) setWeightLogLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!weightLogLoaded) return;
+    storage.set("weightLog", JSON.stringify(weightLog)).catch(() => {});
+  }, [weightLog, weightLogLoaded]);
+
+  const handleLogWeight = useCallback((weightKg) => {
+    const dateStr = localDateStr();
+    setWeightLog((prev) => {
+      const idx = prev.findIndex((w) => w.date === dateStr);
+      if (idx === -1) return [...prev, { date: dateStr, weightKg }];
+      const next = [...prev];
+      next[idx] = { date: dateStr, weightKg };
+      return next;
+    });
+  }, []);
 
   // Hydrate the on-screen session (logs/sets/warmup/timer) for the active day from history + load that day's exercise order
   useEffect(() => {
@@ -2108,7 +2265,7 @@ export default function WorkoutTracker() {
           onRepeat={repeatWorkout}
         />
       )}
-      {showProgress && <ProgressModal onClose={() => setShowProgress(false)} history={history} />}
+      {showProgress && <ProgressModal onClose={() => setShowProgress(false)} history={history} weightLog={weightLog} onLogWeight={handleLogWeight} />}
 
       {prToast && <PRToast pr={prToast} onDone={() => setPrToast(null)} />}
     </div>
