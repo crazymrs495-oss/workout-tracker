@@ -2442,6 +2442,17 @@ export default function WorkoutTracker() {
     if (finished || finishingRef.current) return;
     finishingRef.current = true;
 
+    // VALIDATION GATE: FINISH is not itself what saves a workout — a workout is only valid
+    // (and therefore savable to History) if at least one set was actually logged as done.
+    // If nothing was logged, this is a no-op: no History write, no state change of any kind,
+    // and — because the streak is derived solely from History (see computeStreakValue above) —
+    // no streak change either. This is the only gate that matters; there is no separate
+    // "streak + 1" anywhere for FINISH to trigger even if it wanted to.
+    if (doneSets <= 0) {
+      finishingRef.current = false;
+      return;
+    }
+
     const end = Date.now();
     const start = sessionStart || end;
     const durationSec = Math.max(0, Math.round((end - start) / 1000));
@@ -2490,6 +2501,9 @@ export default function WorkoutTracker() {
     setSavedDuration(durationSec);
     setPrBaselines(newBaselines);
 
+    // This is the ONLY place a History record is ever written for a finish. The streak is never
+    // touched here directly — it is recalculated afterward, purely from the resulting `history`
+    // array, by the dedicated effect above (history → computeStreakValue(history) → setStreak).
     setHistory((prev) => {
       const idx = prev.findIndex((r) => r.id === recordId);
       if (idx === -1) return [record, ...prev];
@@ -2509,6 +2523,7 @@ export default function WorkoutTracker() {
     await Promise.all(baselineWrites);
     finishingRef.current = false;
   }, [finished, sessionStart, day, getOrderedExercises, prBaselines, logs, setCounts, warmupDone, liveVolume, doneSets, totalSets, recordId, activeDay, todayStr]);
+
 
   const elapsedMs = sessionStart ? ((finished ? sessionEnd : (sessionEnd || nowTick)) - sessionStart) : 0;
   const elapsedSeconds = finished ? savedDuration : Math.max(0, Math.floor(elapsedMs / 1000));
