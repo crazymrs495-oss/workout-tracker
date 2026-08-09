@@ -2112,56 +2112,68 @@ export default function WorkoutTracker() {
     })();
   }, []);
 
-  // History is the single source of truth for the streak. Only a genuinely FINISHED workout
-  // (rec.finished === true, written solely by finishSession) counts toward a day. Starting a
-  // workout, logging sets, or hitting Reset never touches History, so none of that can move
-  // the streak — and deleting a History entry recalculates it immediately since this derives
-  // straight from the `history` array every time it changes.
-  const computeStreakValue = useCallback((pausedList, hist) => {
+  // History is the single source of truth for the streak, and the streak is nothing more than
+  // a count of genuinely FINISHED workouts in it (rec.finished === true, written solely by
+  // finishSession, deduped by id). There is NO calendar walking here and NO concept of
+  // consecutive days — a skipped day never lowers this number. Starting a workout, logging
+  // sets, or hitting Reset never touches History, so none of that can move the streak. Adding
+  // a finished record increases it by one; deleting one decreases it by one — that's the whole
+  // rule, and it's why this recalculates straight from the `history` array every time it changes.
+  const computeStreakValue = useCallback((hist) => {
+    const seen = new Set();
     let count = 0;
-    let cursor = new Date();
-    let isToday = true;
-    for (let i = 0; i < 400; i++) {
-      const dateStr = localDateStr(cursor);
-      const dow = cursor.getDay();
-      const isSunday = dow === 0;
-      const isPaused = pausedList.includes(dateStr);
-      if (isSunday || isPaused) {
-        cursor.setDate(cursor.getDate() - 1);
-        isToday = false;
-        continue;
+    hist.forEach((r) => {
+      if (r && r.finished && !seen.has(r.id)) {
+        seen.add(r.id);
+        count++;
       }
-      // Any FINISHED workout on this date counts — it doesn't have to be the "usual" split for that weekday
-      const anyDone = hist.some((r) => r.date === dateStr && r.finished);
-      if (anyDone) count++;
-      else if (isToday) { /* today not logged yet, don't break */ }
-      else break;
-      cursor.setDate(cursor.getDate() - 1);
-      isToday = false;
-    }
+    });
     return count;
   }, []);
 
+  // Separate from the streak NUMBER above: this decides only whether the broken-streak
+  // animation should fire. Skipping a day is always allowed and never touches the streak count,
+  // but a day that is neither a finished-workout day nor explicitly marked as a rest day (via
+  // the pause toggle) is the app's actual inactivity condition. We only need to look at the most
+  // recent fully-elapsed day (yesterday) and walk back over any *consecutive* rest-marked days
+  // before it — the moment we hit a workout day, everything before it is already "resolved" and
+  // irrelevant; the moment we hit an unmarked empty day, that's the break. Today is never checked
+  // here since it hasn't elapsed yet. No hardcoded weekday (e.g. Sunday) is ever treated specially.
+  const detectInactivityBreak = useCallback((pausedList, hist) => {
+    let cursor = new Date();
+    cursor.setDate(cursor.getDate() - 1);
+    for (let i = 0; i < 400; i++) {
+      const dateStr = localDateStr(cursor);
+      const anyDone = hist.some((r) => r.date === dateStr && r.finished);
+      if (anyDone) return false;
+      if (!pausedList.includes(dateStr)) return true;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return false;
+  }, []);
+
   // ---- Broken-streak animation state ----
-  const [lastKnownStreak, setLastKnownStreak] = useState(0); // last time the streak was healthy (> 0)
-  const [lastKnownLoaded, setLastKnownLoaded] = useState(false);
-  const lastKnownStreakRef = useRef(0);
-  useEffect(() => { lastKnownStreakRef.current = lastKnownStreak; }, [lastKnownStreak]);
+  // Whether an inactivity break is the currently-active (already-flagged) state, persisted so a
+  // reload while still broken doesn't replay the animation — it only fires on the *transition*
+  // into a break, and again later only once a fresh break happens after being resolved.
+  const [brokenStreakActive, setBrokenStreakActive] = useState(false);
+  const [brokenStreakActiveLoaded, setBrokenStreakActiveLoaded] = useState(false);
+  const brokenStreakActiveRef = useRef(false);
+  useEffect(() => { brokenStreakActiveRef.current = brokenStreakActive; }, [brokenStreakActive]);
   const [brokenStreakAnimEnabled, setBrokenStreakAnimEnabled] = useState(true);
   const [brokenStreakAnimSettingLoaded, setBrokenStreakAnimSettingLoaded] = useState(false);
   const [brokenStreakEvent, setBrokenStreakEvent] = useState(null); // { previousStreak, id } — real event
   const [previewBrokenStreak, setPreviewBrokenStreak] = useState(false); // preview trigger
-  const streakBreakCheckedRef = useRef(false); // ensures at most one break evaluation per app load
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await storage.get("lastKnownStreak");
-        setLastKnownStreak(res ? parseInt(res.value, 10) || 0 : 0);
+        const res = await storage.get("brokenStreakActive");
+        setBrokenStreakActive(res ? res.value === "1" : false);
       } catch (e) {
-        setLastKnownStreak(0);
+        setBrokenStreakActive(false);
       }
-      setLastKnownLoaded(true);
+      setBrokenStreakActiveLoaded(true);
     })();
     (async () => {
       try {
@@ -2182,37 +2194,31 @@ export default function WorkoutTracker() {
     });
   }, []);
 
-  // Recompute whenever the saved history actually changes (this is the real source of truth —
-  // watching `logs` directly was one render behind, so today's session never got counted).
-  // This same pass also detects a genuinely NEW broken streak — at most once per app load —
-  // so the animation never replays on reload and is never triggered by simply opening or
-  // rerendering the app.
+  // The streak NUMBER: purely derived from History, recalculated whenever History changes and
+  // whenever the app loads. Nothing else — not pausedDates, not the broken-streak state below —
+  // is allowed to influence it.
   useEffect(() => {
-    if (!historyLoaded || !pausedLoaded) return;
-    const newStreak = computeStreakValue(pausedDates, history);
-    setStreak(newStreak);
+    if (!historyLoaded) return;
+    setStreak(computeStreakValue(history));
+  }, [history, historyLoaded, computeStreakValue]);
 
-    if (!lastKnownLoaded || !brokenStreakAnimSettingLoaded) return;
+  // The broken-streak ANIMATION: fires only on the transition into the app's defined inactivity
+  // condition (see detectInactivityBreak), never merely because a day was skipped and marked as
+  // rest, and never because of Reset/logging/opening the app. The "previousStreak" it displays is
+  // just the current (count-based) streak value, since that count itself is never altered by a break.
+  useEffect(() => {
+    if (!historyLoaded || !pausedLoaded || !brokenStreakActiveLoaded || !brokenStreakAnimSettingLoaded) return;
+    const isBroken = detectInactivityBreak(pausedDates, history);
+    if (isBroken === brokenStreakActiveRef.current) return;
 
-    if (newStreak > 0) {
-      if (lastKnownStreakRef.current !== newStreak) {
-        lastKnownStreakRef.current = newStreak;
-        setLastKnownStreak(newStreak);
-        storage.set("lastKnownStreak", String(newStreak)).catch(() => {});
-      }
-    } else if (!streakBreakCheckedRef.current) {
-      streakBreakCheckedRef.current = true;
-      if (lastKnownStreakRef.current > 0) {
-        const prev = lastKnownStreakRef.current;
-        lastKnownStreakRef.current = 0;
-        setLastKnownStreak(0);
-        storage.set("lastKnownStreak", "0").catch(() => {});
-        if (brokenStreakAnimEnabled) {
-          setBrokenStreakEvent({ previousStreak: prev, id: Date.now() });
-        }
-      }
+    brokenStreakActiveRef.current = isBroken;
+    setBrokenStreakActive(isBroken);
+    storage.set("brokenStreakActive", isBroken ? "1" : "0").catch(() => {});
+
+    if (isBroken && brokenStreakAnimEnabled) {
+      setBrokenStreakEvent({ previousStreak: computeStreakValue(history), id: Date.now() });
     }
-  }, [history, pausedDates, historyLoaded, pausedLoaded, lastKnownLoaded, brokenStreakAnimSettingLoaded, brokenStreakAnimEnabled, computeStreakValue]);
+  }, [history, pausedDates, historyLoaded, pausedLoaded, brokenStreakActiveLoaded, brokenStreakAnimSettingLoaded, brokenStreakAnimEnabled, detectInactivityBreak, computeStreakValue]);
 
   const isTodayPaused = pausedDates.includes(todayStr);
   const togglePauseToday = useCallback(async () => {
