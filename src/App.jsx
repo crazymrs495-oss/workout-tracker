@@ -1044,10 +1044,38 @@ function BrokenStreakOverlay({ days, onDone }) {
 }
 
 // ---------- FINISH BUTTON (bottom of workout content, only visible once started) ----------
-function FinishBar({ state, elapsedSeconds, volume, onFinish, onReset }) {
+function FinishBar({ state, elapsedSeconds, volume, doneSets, totalSets, onFinish, onReset }) {
   if (state === "idle") return null;
 
   if (state === "running") {
+    const allSetsDone = totalSets > 0 && doneSets >= totalSets;
+
+    // Not every set is logged yet — FINISH would be a no-op (see the validation gate in
+    // finishSession), so don't show a button that looks actionable but silently does nothing.
+    // Instead, offer Reset/Cancel so an accidental START can be cleared right away.
+    if (!allSetsDone) {
+      return (
+        <div className="px-4 pb-4">
+          <button
+            onClick={onReset}
+            className="w-full flex items-center justify-center gap-2 py-5 transition active:scale-[0.98]"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.04)",
+              border: "1.5px dashed rgba(0,0,0,0.18)",
+              borderRadius: 28,
+              color: C.textDim,
+            }}
+          >
+            <Trash2 size={18} color={C.textDim} />
+            <span className="text-base font-black tracking-wide">RESET WORKOUT</span>
+            <span className="text-xs font-bold tabular-nums ml-1" style={{ color: C.textFaint }}>
+              {doneSets}/{totalSets} sets · {fmtDuration(elapsedSeconds)}
+            </span>
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="px-4 pb-4">
         <button
@@ -2721,6 +2749,8 @@ export default function WorkoutTracker() {
           state={finishState}
           elapsedSeconds={elapsedSeconds}
           volume={finished ? savedVolume : liveVolume}
+          doneSets={doneSets}
+          totalSets={totalSets}
           onFinish={finishSession}
           onReset={resetSession}
         />
