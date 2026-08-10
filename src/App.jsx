@@ -187,7 +187,7 @@ const PROGRAM = [
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p1-ote", name: "Single Arm Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p1-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
@@ -242,7 +242,7 @@ const PROGRAM = [
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "Single Arm Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p2-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p2-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
     ],
