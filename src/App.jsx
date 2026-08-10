@@ -187,7 +187,7 @@ const PROGRAM = [
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p1-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p1-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
@@ -208,7 +208,7 @@ const PROGRAM = [
       { name: "Biceps", exercises: [
         { id: "pl1-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
         { id: "pl1-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl1-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "pl1-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
       ]},
     ],
   },
@@ -222,8 +222,8 @@ const PROGRAM = [
       { name: "Legs", exercises: [
         { id: "lg-lp", name: "Leg Press", sets: 3, reps: "8-10" },
         { id: "lg-le", name: "Leg Extension", sets: 3, reps: "8-10" },
-        { id: "lg-rdl", name: "Hamstring Curl", sets: 3, reps: "8-10" },
-        { id: "lg-hc", name: "Calf Raises", sets: 3, reps: "8-10" },
+        { id: "lg-rdl", name: "RDL", sets: 3, reps: "8-10" },
+        { id: "lg-hc", name: "Hamstring Curl", sets: 3, reps: "8-10" },
       ]},
     ],
   },
@@ -242,7 +242,7 @@ const PROGRAM = [
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p2-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p2-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
     ],
@@ -254,13 +254,13 @@ const PROGRAM = [
         { id: "pl2-wpd", name: "Wide Pull Down", sets: 3, reps: "8-10" },
         { id: "pl2-cgr", name: "Close Grip Row", sets: 3, reps: "8-10" },
         { id: "pl2-dbr", name: "DB Row (Chest Supported)", sets: 2, reps: "8-10" },
-        { id: "pl2-kelso", name: "Kelso Shrugs", sets: 1, reps: "8-10" },
+        { id: "pl2-kelso", name: "Kelso Shrugs", sets: 2, reps: "8-10" },
         { id: "pl2-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
         { id: "pl2-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
         { id: "pl2-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl2-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "pl2-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
         { id: "pl2-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
@@ -291,32 +291,30 @@ const PROGRAM = [
 
 const WARMUPS = {
   push: { label: "Push Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Chest openers x 15", dur: "" },
+    { id: "w1", text: "Arm circles", dur: "1 min" },
+    { id: "w2", text: "Band pull-apart", dur: "1 min" },
+    { id: "w3", text: "Shoulder dislocates (band)", dur: "1 min" },
     { id: "w4", text: "Push-up x 15", dur: "" },
   ]},
   pull: { label: "Pull Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Dead hang", dur: "30 sec" },
-    { id: "w4", text: "Lat Stretch", dur: "20 sec" },
+    { id: "w1", text: "Band pull-aparts", dur: "1 min" },
+    { id: "w2", text: "Scapular pull-ups", dur: "2 min" },
+    { id: "w3", text: "Light band rows", dur: "2 min" },
   ]},
   legs: { label: "Leg Warm-up", items: [
-    { id: "w1", text: "Bodyweight squats x 15", dur: "" },
-    { id: "w2", text: "Leg swings (front-back x 10, side-side x 10)", dur: "" },
-    { id: "w3", text: "Walking lunges x 10", dur: "" },
-    { id: "w4", text: "Calf raises x 15", dur: "" },
+    { id: "w1", text: "Bodyweight squats", dur: "1 min" },
+    { id: "w2", text: "Leg swings (front-back, side-side)", dur: "1 min" },
+    { id: "w3", text: "Walking lunges", dur: "2 min" },
   ]},
   shoarms: { label: "Shoulder + Arms Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Shoulder rotations x 10", dur: "" },
-    { id: "w4", text: "Light band curls/ppushdowns x 10", dur: "" },
+    { id: "w1", text: "Arm circles", dur: "1 min" },
+    { id: "w2", text: "Scapular pull-ups", dur: "1 min" },
+    { id: "w3", text: "Band pull-aparts + external rotations", dur: "1 min" },
+    { id: "w4", text: "Light band curls/pushdowns", dur: "2 min" },
   ]},
 };
 
-const REST_DEFAULT = 120;
+const REST_DEFAULT = 90;
 const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
 
 function todayId() {
@@ -892,10 +890,22 @@ function BrokenStreakOverlay({ days, onDone }) {
   const shards = shardsRef.current;
 
   useEffect(() => {
+    // Try to get the shared AudioContext running as early as possible (rather than only
+    // at the moment the sound is scheduled) — gives ctx.resume() the most possible time to
+    // take effect before playGlassCrackSound() actually fires below.
+    getAudioCtx();
     let timers;
     if (reducedMotion) {
+      // Reduced motion still gets a (non-animated, static) crack + the sound + a haptic
+      // buzz — "reduce motion" means skip the shake/fly-apart animation, not silence every
+      // form of feedback that the streak broke.
       timers = [
-        setTimeout(() => setPhase("split"), 180), // reuse "split" to mean "revealed" here
+        setTimeout(() => setPhase("crack"), 150),
+        setTimeout(() => {
+          playGlassCrackSound();
+          if (navigator.vibrate) { try { navigator.vibrate([25, 20, 45]); } catch (e) {} }
+        }, 150),
+        setTimeout(() => setPhase("split"), 550), // reuse "split" to mean "revealed" here
         setTimeout(() => setPhase("exit"), 2100),
         setTimeout(() => onDone && onDone(), 2650),
       ];
@@ -919,6 +929,9 @@ function BrokenStreakOverlay({ days, onDone }) {
   const showWhole = !reducedMotion && (phase === "enter" || phase === "crack" || phase === "shake");
   const showCracked = !reducedMotion && (phase === "crack" || phase === "shake");
   const showSplit = !reducedMotion && (phase === "split" || phase === "exit");
+  // Static (no keyframe motion) crack-and-split stand-in shown only for reduced-motion users,
+  // so they still see the glass crack down the middle instead of the effect just being absent.
+  const showStaticCrack = reducedMotion && (phase === "crack" || phase === "split");
   const showReveal = phase === "split" || phase === "exit";
   const exiting = phase === "exit";
 
@@ -956,6 +969,25 @@ function BrokenStreakOverlay({ days, onDone }) {
                 </g>
               </svg>
             )}
+          </div>
+        )}
+
+        {showStaticCrack && (
+          <div
+            className="absolute inset-0"
+            style={{ opacity: phase === "crack" ? 1 : 0, transition: "opacity 0.4s ease" }}
+          >
+            <div className="bsk-half absolute inset-0 rounded-[28px]" style={{ clipPath: "polygon(0 0, 100% 0, 46% 46%, 34% 100%, 0 100%)", transform: "translate(-2px, 1px)" }} />
+            <div className="bsk-half absolute inset-0 rounded-[28px]" style={{ clipPath: "polygon(100% 0, 100% 100%, 34% 100%, 46% 46%)", transform: "translate(2px, -1px)" }} />
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 280" fill="none">
+              <g stroke="rgba(255,255,255,0.85)" strokeWidth="1.4" strokeLinecap="round" style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }}>
+                <path d="M140 30 L129 88 L152 110 L112 140 L140 178 L120 216 L140 252" />
+                <path d="M140 140 L54 102 L26 120" />
+                <path d="M140 140 L220 94 L252 108" />
+                <path d="M140 140 L64 182 L30 198" />
+                <path d="M140 140 L206 192 L240 210" />
+              </g>
+            </svg>
           </div>
         )}
 
@@ -1917,6 +1949,26 @@ function ProgressModal({ onClose, history, weightLog, onLogWeight }) {
 
 // ---------- MAIN APP ----------
 export default function WorkoutTracker() {
+  // Unlock the shared AudioContext on the very first tap/click anywhere in the app.
+  // Without this, if the "broken streak" overlay fires automatically on load (before the
+  // user has touched any of the specific buttons that already call unlockAudio()), the
+  // browser's autoplay policy blocks sound entirely for that whole session.
+  useEffect(() => {
+    const unlock = () => {
+      unlockAudio();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
   const [activeDay, setActiveDay] = useState(todayId());
   const [logs, setLogs] = useState({});
   const [setCounts, setSetCounts] = useState({});
@@ -2335,24 +2387,10 @@ export default function WorkoutTracker() {
     setWarmupDone((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
 
-  // Total/completed set counts for the whole day, used to detect when a set being
-  // marked done is the very last set of the entire workout (not just the last set
-  // of an individual exercise) so the rest timer can be skipped in that case.
-  const totalSetsForDay = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => a + getCount(e), 0), 0);
-  const doneSetsForDay = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
-    const l = logs[e.id] || {};
-    const c = getCount(e);
-    return a + Array.from({ length: c }).filter((_, i) => l[i]?.done).length;
-  }, 0), 0);
-
   const startRest = useCallback(() => {
-    // doneSetsForDay reflects the state from BEFORE the set that just triggered this
-    // call (the toggle's own setState hasn't re-rendered yet), so +1 accounts for it.
-    const isLastSetOfDay = totalSetsForDay > 0 && doneSetsForDay + 1 >= totalSetsForDay;
-    if (isLastSetOfDay) return;
     setRestKey((k) => k + 1);
     setShowRest(true);
-  }, [doneSetsForDay, totalSetsForDay]);
+  }, []);
 
   const getOrderedExercises = useCallback((group) => {
     const baseIds = group.exercises.map((e) => e.id);
@@ -2492,8 +2530,12 @@ export default function WorkoutTracker() {
     }
   }, []);
 
-  const totalSets = totalSetsForDay;
-  const doneSets = doneSetsForDay;
+  const totalSets = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => a + getCount(e), 0), 0);
+  const doneSets = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
+    const l = logs[e.id] || {};
+    const c = getCount(e);
+    return a + Array.from({ length: c }).filter((_, i) => l[i]?.done).length;
+  }, 0), 0);
 
   const liveVolume = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
     const l = logs[e.id] || {};
@@ -2781,7 +2823,7 @@ export default function WorkoutTracker() {
           onImport={importData}
           brokenStreakAnimEnabled={brokenStreakAnimEnabled}
           onToggleBrokenStreakAnim={toggleBrokenStreakAnim}
-          onPreviewBrokenStreak={() => { setShowSettingsMenu(false); setPreviewBrokenStreak(true); }}
+          onPreviewBrokenStreak={() => { unlockAudio(); setShowSettingsMenu(false); setPreviewBrokenStreak(true); }}
         />
       )}
 
