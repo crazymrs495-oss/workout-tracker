@@ -273,7 +273,7 @@ const PROGRAM = [
     groups: [
       { name: "Shoulders", exercises: [
         { id: "sa-clr", name: "Cable Lateral Raise", sets: 3, reps: "8-10" },
-        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 2, reps: "8-10" },
+        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 1, reps: "8-10" },
         { id: "sa-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
@@ -291,32 +291,30 @@ const PROGRAM = [
 
 const WARMUPS = {
   push: { label: "Push Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Chest openers x 15", dur: "" },
-    { id: "w3", text: "Scapular pull-ups x 10", dur: "" },
+    { id: "w1", text: "Arm circles", dur: "1 min" },
+    { id: "w2", text: "Band pull-apart", dur: "1 min" },
+    { id: "w3", text: "Shoulder dislocates (band)", dur: "1 min" },
     { id: "w4", text: "Push-up x 15", dur: "" },
   ]},
   pull: { label: "Pull Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Dead Hang", dur: "30 sec" },
-    { id: "w4", text: "Lat Stretch", dur: "20 sec" },
+    { id: "w1", text: "Band pull-aparts", dur: "1 min" },
+    { id: "w2", text: "Scapular pull-ups", dur: "2 min" },
+    { id: "w3", text: "Light band rows", dur: "2 min" },
   ]},
   legs: { label: "Leg Warm-up", items: [
-    { id: "w1", text: "Bodyweight squats x 15", dur: "" },
-    { id: "w2", text: "Leg swings (front-back x 10, side-side x 10)", dur: "" },
-    { id: "w3", text: "Walking lunges x 10", dur: "" },
-    { id: "w4", text: "Calf raises x 15", dur: "" },
+    { id: "w1", text: "Bodyweight squats", dur: "1 min" },
+    { id: "w2", text: "Leg swings (front-back, side-side)", dur: "1 min" },
+    { id: "w3", text: "Walking lunges", dur: "2 min" },
   ]},
   shoarms: { label: "Shoulder + Arms Warm-up", items: [
-    { id: "w1", text: "Arm circles x 10 forward + 10 backwards", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Shoulder rotations x 10", dur: "" },
-    { id: "w4", text: "Light bodyweight curls/pushdowns x 10", dur: "" },
+    { id: "w1", text: "Arm circles", dur: "1 min" },
+    { id: "w2", text: "Scapular pull-ups", dur: "1 min" },
+    { id: "w3", text: "Band pull-aparts + external rotations", dur: "1 min" },
+    { id: "w4", text: "Light band curls/pushdowns", dur: "2 min" },
   ]},
 };
 
-const REST_DEFAULT = 120;
+const REST_DEFAULT = 90;
 const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
 
 function todayId() {
@@ -2335,10 +2333,24 @@ export default function WorkoutTracker() {
     setWarmupDone((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
 
+  // Total/completed set counts for the whole day, used to detect when a set being
+  // marked done is the very last set of the entire workout (not just the last set
+  // of an individual exercise) so the rest timer can be skipped in that case.
+  const totalSetsForDay = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => a + getCount(e), 0), 0);
+  const doneSetsForDay = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
+    const l = logs[e.id] || {};
+    const c = getCount(e);
+    return a + Array.from({ length: c }).filter((_, i) => l[i]?.done).length;
+  }, 0), 0);
+
   const startRest = useCallback(() => {
+    // doneSetsForDay reflects the state from BEFORE the set that just triggered this
+    // call (the toggle's own setState hasn't re-rendered yet), so +1 accounts for it.
+    const isLastSetOfDay = totalSetsForDay > 0 && doneSetsForDay + 1 >= totalSetsForDay;
+    if (isLastSetOfDay) return;
     setRestKey((k) => k + 1);
     setShowRest(true);
-  }, []);
+  }, [doneSetsForDay, totalSetsForDay]);
 
   const getOrderedExercises = useCallback((group) => {
     const baseIds = group.exercises.map((e) => e.id);
@@ -2478,12 +2490,8 @@ export default function WorkoutTracker() {
     }
   }, []);
 
-  const totalSets = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => a + getCount(e), 0), 0);
-  const doneSets = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
-    const l = logs[e.id] || {};
-    const c = getCount(e);
-    return a + Array.from({ length: c }).filter((_, i) => l[i]?.done).length;
-  }, 0), 0);
+  const totalSets = totalSetsForDay;
+  const doneSets = doneSetsForDay;
 
   const liveVolume = day.groups.reduce((acc, g) => acc + g.exercises.reduce((a, e) => {
     const l = logs[e.id] || {};
