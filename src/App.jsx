@@ -938,10 +938,18 @@ function BrokenStreakOverlay({ days, onDone }) {
   return (
     <div
       className={`fixed inset-0 z-[100] flex items-center justify-center px-6 bsk-backdrop ${exiting ? "bsk-backdrop-out" : ""}`}
-      style={{ backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", backgroundColor: "rgba(10,10,12,0.55)" }}
       role="presentation"
     >
-      <div className="relative flex items-center justify-center" style={{ width: "min(72vw, 280px)", height: "min(72vw, 280px)" }}>
+      <div
+        className="relative flex items-center justify-center rounded-[28px]"
+        style={{
+          width: "min(72vw, 280px)",
+          height: "min(72vw, 280px)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          backgroundColor: "rgba(10,10,12,0.55)",
+        }}
+      >
         {/* Content revealed once the card parts */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-opacity"
