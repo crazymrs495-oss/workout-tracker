@@ -298,7 +298,7 @@ const WARMUPS = {
   ]},
   pull: { label: "Pull Warm-up", items: [
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
-    { id: "w2", text: "Scapular pull-ups x 10", dur: "2 min" },
+    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
     { id: "w3", text: "Dead hang", dur: "30 sec" },
     { id: "w4", text: "Lat Stretch", dur: "20 sec" },
   ]},
