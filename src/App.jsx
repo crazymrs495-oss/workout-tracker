@@ -291,30 +291,32 @@ const PROGRAM = [
 
 const WARMUPS = {
   push: { label: "Push Warm-up", items: [
-    { id: "w1", text: "Arm circles", dur: "1 min" },
-    { id: "w2", text: "Band pull-apart", dur: "1 min" },
-    { id: "w3", text: "Shoulder dislocates (band)", dur: "1 min" },
+    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
+    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
+    { id: "w3", text: "Chest openers x 15", dur: "" },
     { id: "w4", text: "Push-up x 15", dur: "" },
   ]},
   pull: { label: "Pull Warm-up", items: [
-    { id: "w1", text: "Band pull-aparts", dur: "1 min" },
-    { id: "w2", text: "Scapular pull-ups", dur: "2 min" },
-    { id: "w3", text: "Light band rows", dur: "2 min" },
+    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
+    { id: "w2", text: "Scapular pull-ups x 10", dur: "2 min" },
+    { id: "w3", text: "Dead hang", dur: "30 sec" },
+    { id: "w4", text: "Lat Stretch", dur: "20 sec" },
   ]},
   legs: { label: "Leg Warm-up", items: [
-    { id: "w1", text: "Bodyweight squats", dur: "1 min" },
-    { id: "w2", text: "Leg swings (front-back, side-side)", dur: "1 min" },
-    { id: "w3", text: "Walking lunges", dur: "2 min" },
+    { id: "w1", text: "Bodyweight squats x 15", dur: "" },
+    { id: "w2", text: "Leg swings (front-back x 10, side-side x 10)", dur: "" },
+    { id: "w3", text: "Walking lunges x 10", dur: "" },
+    { id: "w4", text: "Calf raises x 15", dur: "" },
   ]},
   shoarms: { label: "Shoulder + Arms Warm-up", items: [
-    { id: "w1", text: "Arm circles", dur: "1 min" },
-    { id: "w2", text: "Scapular pull-ups", dur: "1 min" },
-    { id: "w3", text: "Band pull-aparts + external rotations", dur: "1 min" },
-    { id: "w4", text: "Light band curls/pushdowns", dur: "2 min" },
+    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
+    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
+    { id: "w3", text: "Shoulder rotations x 10", dur: "" },
+    { id: "w4", text: "Light band curls/ppushdowns x 10", dur: "" },
   ]},
 };
 
-const REST_DEFAULT = 90;
+const REST_DEFAULT = 120;
 const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
 
 function todayId() {
