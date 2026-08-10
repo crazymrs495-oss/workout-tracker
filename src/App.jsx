@@ -187,7 +187,7 @@ const PROGRAM = [
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p1-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p1-ote", name: "Single Arm Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
@@ -208,7 +208,7 @@ const PROGRAM = [
       { name: "Biceps", exercises: [
         { id: "pl1-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
         { id: "pl1-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl1-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "pl1-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
       ]},
     ],
   },
@@ -222,8 +222,8 @@ const PROGRAM = [
       { name: "Legs", exercises: [
         { id: "lg-lp", name: "Leg Press", sets: 3, reps: "8-10" },
         { id: "lg-le", name: "Leg Extension", sets: 3, reps: "8-10" },
-        { id: "lg-rdl", name: "RDL", sets: 3, reps: "8-10" },
-        { id: "lg-hc", name: "Hamstring Curl", sets: 3, reps: "8-10" },
+        { id: "lg-rdl", name: "Hamstring Curl", sets: 3, reps: "8-10" },
+        { id: "lg-hc", name: "Calf Raises", sets: 3, reps: "8-10" },
       ]},
     ],
   },
@@ -242,7 +242,7 @@ const PROGRAM = [
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p2-ote", name: "Single Arm Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p2-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
     ],
@@ -254,13 +254,13 @@ const PROGRAM = [
         { id: "pl2-wpd", name: "Wide Pull Down", sets: 3, reps: "8-10" },
         { id: "pl2-cgr", name: "Close Grip Row", sets: 3, reps: "8-10" },
         { id: "pl2-dbr", name: "DB Row (Chest Supported)", sets: 2, reps: "8-10" },
-        { id: "pl2-kelso", name: "Kelso Shrugs", sets: 2, reps: "8-10" },
+        { id: "pl2-kelso", name: "Kelso Shrugs", sets: 1, reps: "8-10" },
         { id: "pl2-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
         { id: "pl2-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
         { id: "pl2-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl2-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "pl2-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
         { id: "pl2-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
