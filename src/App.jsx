@@ -381,12 +381,28 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
+// SINGLE SOURCE OF TRUTH for "does this History record represent an actual completed workout?"
+// Used everywhere a completed-workout count matters: the streak, the broken-streak inactivity
+// check, import counts, export filtering, and the History/Progress stats (via buildEntryFromRecord).
+// A record only counts if it was truly finished AND at least one set was logged as done — a
+// "finished: true" record with doneSets: 0 (e.g. an accidental Start->Finish with nothing logged,
+// or a stray/legacy empty record) must never count toward anything.
+function isValidCompletedWorkout(rec) {
+  if (!rec || rec.finished !== true) return false;
+  if (typeof rec.doneSets === "number") return rec.doneSets > 0;
+  // Legacy fallback for records saved before the doneSets field existed: recompute from logs.
+  const logs = rec.logs || {};
+  return Object.values(logs).some(
+    (exLog) => exLog && Object.values(exLog).some((s) => s && s.done)
+  );
+}
+
 // Turns a raw saved workout record into the enriched shape used by the History/Progress screens
 function buildEntryFromRecord(rec) {
   // History (and everything derived from it — the streak, the History screen, weekly summaries)
-  // only ever reflects genuinely FINISHED workouts. This also guards against any legacy/imported
-  // data that might still contain in-progress records from an older version of the app.
-  if (!rec || !rec.finished) return null;
+  // only ever reflects genuinely completed workouts. This also guards against any legacy/imported
+  // data that might still contain in-progress or empty records from an older version of the app.
+  if (!isValidCompletedWorkout(rec)) return null;
   const dayDef = PROGRAM.find((d) => d.id === rec.dayId);
   if (!dayDef) return null;
   const { logs = {}, setCounts = {}, order = {}, sessionStart = null, sessionEnd = null } = rec;
@@ -2000,7 +2016,7 @@ export default function WorkoutTracker() {
       } catch (e) {}
       if (cancelled) return;
       const todayId2 = `${activeDay}:${todayStr}`;
-      const rec = historyRef.current.find((r) => r.id === todayId2 && r.finished);
+      const rec = historyRef.current.find((r) => r.id === todayId2 && isValidCompletedWorkout(r));
       const draft = draftsRef.current[todayId2];
       if (rec) {
         // A finished workout already exists for today — show it as completed.
@@ -2123,7 +2139,7 @@ export default function WorkoutTracker() {
     const seen = new Set();
     let count = 0;
     hist.forEach((r) => {
-      if (r && r.finished && !seen.has(r.id)) {
+      if (isValidCompletedWorkout(r) && !seen.has(r.id)) {
         seen.add(r.id);
         count++;
       }
@@ -2144,7 +2160,7 @@ export default function WorkoutTracker() {
     cursor.setDate(cursor.getDate() - 1);
     for (let i = 0; i < 400; i++) {
       const dateStr = localDateStr(cursor);
-      const anyDone = hist.some((r) => r.date === dateStr && r.finished);
+      const anyDone = hist.some((r) => r.date === dateStr && isValidCompletedWorkout(r));
       if (anyDone) return false;
       if (!pausedList.includes(dateStr)) return true;
       cursor.setDate(cursor.getDate() - 1);
@@ -2366,12 +2382,16 @@ export default function WorkoutTracker() {
   }, [recordId]);
 
   // ---- Backup / restore (single file covers History + Progress, since Progress is derived from history) ----
+  // Export only ever includes genuinely valid completed workouts — empty/null records (e.g. an
+  // accidental Start->Finish with nothing logged) are excluded entirely. The JSON shape itself
+  // (app/version/exportedAt/history/prBaselines/streakPauses) is unchanged; only the contents of
+  // `history` are filtered.
   const exportData = useCallback(() => {
     const payload = {
       app: "aesthetic-ascension-trakd",
       version: 1,
       exportedAt: new Date().toISOString(),
-      history,
+      history: history.filter(isValidCompletedWorkout),
       prBaselines,
       streakPauses: pausedDates,
     };
@@ -2395,8 +2415,10 @@ export default function WorkoutTracker() {
 
       setHistory((prev) => {
         const map = new Map(prev.map((r) => [r.id, r]));
-        // Only finished workouts belong in History / the streak — skip any in-progress records
-        // that might exist in an older backup file.
+        // Only finished workouts belong in History at all — skip any in-progress records that
+        // might exist in an older backup file. (Empty finished-but-doneSets:0 records are kept
+        // here, same as they always have been, since completed-workout calculations everywhere
+        // else — the streak, stats, and export — ignore them via isValidCompletedWorkout.)
         importedHistory.forEach((r) => { if (r && r.id && r.finished) map.set(r.id, r); });
         return Array.from(map.values());
       });
@@ -2411,7 +2433,10 @@ export default function WorkoutTracker() {
         setPausedDates((prev) => Array.from(new Set([...prev, ...parsed.streakPauses])));
       }
 
-      return { ok: true, msg: `Imported ${importedHistory.length} workout${importedHistory.length === 1 ? "" : "s"}.` };
+      // The reported count reflects only genuinely valid completed workouts among those imported —
+      // e.g. importing 5 records where only 3 pass isValidCompletedWorkout reports "Imported 3".
+      const validImportedCount = importedHistory.filter(isValidCompletedWorkout).length;
+      return { ok: true, msg: `Imported ${validImportedCount} workout${validImportedCount === 1 ? "" : "s"}.` };
     } catch (e) {
       return { ok: false, msg: "Couldn't read that file — make sure it's an unmodified export." };
     }
