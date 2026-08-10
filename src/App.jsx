@@ -384,11 +384,17 @@ function round1(n) {
 // SINGLE SOURCE OF TRUTH for "does this History record represent an actual completed workout?"
 // Used everywhere a completed-workout count matters: the streak, the broken-streak inactivity
 // check, import counts, export filtering, and the History/Progress stats (via buildEntryFromRecord).
-// A record only counts if it was truly finished AND at least one set was logged as done — a
-// "finished: true" record with doneSets: 0 (e.g. an accidental Start->Finish with nothing logged,
-// or a stray/legacy empty record) must never count toward anything.
+// A record only counts if it was truly finished AND every set for that day was logged as done —
+// a "finished: true" record with doneSets: 0, or with only some sets logged (e.g. an accidental
+// Start->Finish, or Finish pressed before the workout was actually completed), must never count
+// toward anything. This mirrors the exact gate finishSession itself uses before ever writing to
+// History, so nothing partial can ever be considered valid from any angle (new saves, imports,
+// or legacy data).
 function isValidCompletedWorkout(rec) {
   if (!rec || rec.finished !== true) return false;
+  if (typeof rec.doneSets === "number" && typeof rec.totalSets === "number") {
+    return rec.totalSets > 0 && rec.doneSets >= rec.totalSets;
+  }
   if (typeof rec.doneSets === "number") return rec.doneSets > 0;
   // Legacy fallback for records saved before the doneSets field existed: recompute from logs.
   const logs = rec.logs || {};
@@ -2468,12 +2474,13 @@ export default function WorkoutTracker() {
     finishingRef.current = true;
 
     // VALIDATION GATE: FINISH is not itself what saves a workout — a workout is only valid
-    // (and therefore savable to History) if at least one set was actually logged as done.
-    // If nothing was logged, this is a no-op: no History write, no state change of any kind,
-    // and — because the streak is derived solely from History (see computeStreakValue above) —
-    // no streak change either. This is the only gate that matters; there is no separate
+    // (and therefore savable to History) if EVERY set for the day was actually logged as done.
+    // An accidental Start->Finish with nothing logged, or a Finish pressed partway through with
+    // sets still remaining, is a no-op: no History write, no state change of any kind, and —
+    // because the streak is derived solely from History (see computeStreakValue above) — no
+    // streak change either. This is the only gate that matters; there is no separate
     // "streak + 1" anywhere for FINISH to trigger even if it wanted to.
-    if (doneSets <= 0) {
+    if (totalSets <= 0 || doneSets < totalSets) {
       finishingRef.current = false;
       return;
     }
