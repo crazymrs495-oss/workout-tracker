@@ -1044,10 +1044,30 @@ function BrokenStreakOverlay({ days, onDone }) {
 }
 
 // ---------- FINISH BUTTON (bottom of workout content, only visible once started) ----------
-function FinishBar({ state, elapsedSeconds, volume, onFinish, onReset }) {
+function FinishBar({ state, elapsedSeconds, volume, onFinish, onReset, canFinish }) {
   if (state === "idle") return null;
 
   if (state === "running") {
+    if (!canFinish) {
+      return (
+        <div className="px-4 pb-4">
+          <button
+            onClick={onReset}
+            className="w-full flex items-center justify-center gap-2 py-5 transition active:scale-[0.98] relative overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, #2a2a2a 0%, #111111 60%, #000000 100%)",
+              border: "1.5px solid rgba(255,255,255,0.14)",
+              borderRadius: 28,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+            }}
+          >
+            <RotateCcw size={18} color="#ffffff" />
+            <span className="text-base font-black tracking-wide" style={{ color: "#ffffff" }}>RESET WORKOUT</span>
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="px-4 pb-4">
         <button
@@ -2723,6 +2743,7 @@ export default function WorkoutTracker() {
           volume={finished ? savedVolume : liveVolume}
           onFinish={finishSession}
           onReset={resetSession}
+          canFinish={doneSets > 0 && doneSets >= totalSets}
         />
       </div>
 
