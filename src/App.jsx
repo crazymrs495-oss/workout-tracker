@@ -273,7 +273,7 @@ const PROGRAM = [
     groups: [
       { name: "Shoulders", exercises: [
         { id: "sa-clr", name: "Cable Lateral Raise", sets: 3, reps: "8-10" },
-        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 1, reps: "8-10" },
+        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 2, reps: "8-10" },
         { id: "sa-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
