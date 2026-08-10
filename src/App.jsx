@@ -105,70 +105,6 @@ function playPRSound() {
     osc2.start(start); osc2.stop(start + 0.65);
   });
 }
-// Synthesized "premium glass crack" sound — a sharp filtered noise burst plus a few
-// high, brittle ticks (mirrors the fully-synthesized sound design used elsewhere in this
-// app, so no external audio asset is required). Fails silently if audio is unavailable
-// or blocked by the browser's autoplay policy.
-function playGlassCrackSound() {
-  try {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-
-    // Short burst of filtered white noise = the "crack"
-    const bufferSize = Math.floor(ctx.sampleRate * 0.35);
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      const decay = Math.pow(1 - i / bufferSize, 3);
-      data[i] = (Math.random() * 2 - 1) * decay;
-    }
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.value = 2600;
-    bandpass.Q.value = 0.7;
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0, now);
-    noiseGain.gain.linearRampToValueAtTime(0.55, now + 0.008);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-    noise.connect(bandpass).connect(noiseGain).connect(ctx.destination);
-    noise.start(now);
-    noise.stop(now + 0.35);
-
-    // A handful of brittle high "shard" ticks scattered just after the initial crack
-    const tickTimes = [0.03, 0.09, 0.14, 0.19, 0.26];
-    tickTimes.forEach((t, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = 2200 + Math.random() * 1400 - i * 60;
-      const start = now + t;
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.18, start + 0.006);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.09);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.1);
-    });
-
-    // Low, dull thud underneath as the card splits
-    const thud = ctx.createOscillator();
-    const thudGain = ctx.createGain();
-    thud.type = "sine";
-    thud.frequency.setValueAtTime(180, now + 0.05);
-    thud.frequency.exponentialRampToValueAtTime(60, now + 0.3);
-    thudGain.gain.setValueAtTime(0, now + 0.05);
-    thudGain.gain.linearRampToValueAtTime(0.35, now + 0.08);
-    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-    thud.connect(thudGain).connect(ctx.destination);
-    thud.start(now + 0.05);
-    thud.stop(now + 0.42);
-  } catch (e) {
-    // Autoplay blocked or Web Audio unavailable — the animation still runs silently.
-  }
-}
 
 // ---------- DATA ----------
 const PROGRAM = [
@@ -381,34 +317,8 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
-// SINGLE SOURCE OF TRUTH for "does this History record represent an actual completed workout?"
-// Used everywhere a completed-workout count matters: the streak, the broken-streak inactivity
-// check, import counts, export filtering, and the History/Progress stats (via buildEntryFromRecord).
-// A record only counts if it was truly finished AND every set for that day was logged as done —
-// a "finished: true" record with doneSets: 0, or with only some sets logged (e.g. an accidental
-// Start->Finish, or Finish pressed before the workout was actually completed), must never count
-// toward anything. This mirrors the exact gate finishSession itself uses before ever writing to
-// History, so nothing partial can ever be considered valid from any angle (new saves, imports,
-// or legacy data).
-function isValidCompletedWorkout(rec) {
-  if (!rec || rec.finished !== true) return false;
-  if (typeof rec.doneSets === "number" && typeof rec.totalSets === "number") {
-    return rec.totalSets > 0 && rec.doneSets >= rec.totalSets;
-  }
-  if (typeof rec.doneSets === "number") return rec.doneSets > 0;
-  // Legacy fallback for records saved before the doneSets field existed: recompute from logs.
-  const logs = rec.logs || {};
-  return Object.values(logs).some(
-    (exLog) => exLog && Object.values(exLog).some((s) => s && s.done)
-  );
-}
-
 // Turns a raw saved workout record into the enriched shape used by the History/Progress screens
 function buildEntryFromRecord(rec) {
-  // History (and everything derived from it — the streak, the History screen, weekly summaries)
-  // only ever reflects genuinely completed workouts. This also guards against any legacy/imported
-  // data that might still contain in-progress or empty records from an older version of the app.
-  if (!isValidCompletedWorkout(rec)) return null;
   const dayDef = PROGRAM.find((d) => d.id === rec.dayId);
   if (!dayDef) return null;
   const { logs = {}, setCounts = {}, order = {}, sessionStart = null, sessionEnd = null } = rec;
@@ -852,197 +762,6 @@ function PRToast({ pr, onDone }) {
   );
 }
 
-// ---------- BROKEN STREAK ANIMATION (reusable — used for the real event AND Settings > Preview) ----------
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(() =>
-    typeof window !== "undefined" && window.matchMedia
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false
-  );
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handler = () => setReduced(mq.matches);
-    if (mq.addEventListener) mq.addEventListener("change", handler); else mq.addListener(handler);
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", handler); else mq.removeListener(handler);
-    };
-  }, []);
-  return reduced;
-}
-
-function BrokenStreakOverlay({ days, onDone }) {
-  const reducedMotion = useReducedMotion();
-  const [phase, setPhase] = useState("enter"); // enter -> crack -> shake -> split -> exit
-  const shardsRef = useRef(
-    Array.from({ length: 12 }).map(() => {
-      const angle = Math.random() * 360;
-      const dist = 55 + Math.random() * 85;
-      return {
-        size: 4 + Math.random() * 8,
-        rotate: Math.random() * 520 - 260,
-        delay: Math.random() * 0.1,
-        sx: Math.cos((angle * Math.PI) / 180) * dist,
-        sy: Math.sin((angle * Math.PI) / 180) * dist,
-      };
-    })
-  );
-  const shards = shardsRef.current;
-
-  useEffect(() => {
-    let timers;
-    if (reducedMotion) {
-      timers = [
-        setTimeout(() => setPhase("split"), 180), // reuse "split" to mean "revealed" here
-        setTimeout(() => setPhase("exit"), 2100),
-        setTimeout(() => onDone && onDone(), 2650),
-      ];
-    } else {
-      timers = [
-        setTimeout(() => setPhase("crack"), 480),
-        setTimeout(() => {
-          playGlassCrackSound();
-          if (navigator.vibrate) { try { navigator.vibrate([25, 20, 45]); } catch (e) {} }
-        }, 480),
-        setTimeout(() => setPhase("shake"), 800),
-        setTimeout(() => setPhase("split"), 1080),
-        setTimeout(() => setPhase("exit"), 3200),
-        setTimeout(() => onDone && onDone(), 3800),
-      ];
-    }
-    return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reducedMotion]);
-
-  const showWhole = !reducedMotion && (phase === "enter" || phase === "crack" || phase === "shake");
-  const showCracked = !reducedMotion && (phase === "crack" || phase === "shake");
-  const showSplit = !reducedMotion && (phase === "split" || phase === "exit");
-  const showReveal = phase === "split" || phase === "exit";
-  const exiting = phase === "exit";
-
-  return (
-    <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center px-6 bsk-backdrop ${exiting ? "bsk-backdrop-out" : ""}`}
-      style={{ backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", backgroundColor: "rgba(10,10,12,0.55)" }}
-      role="presentation"
-    >
-      <div className="relative flex items-center justify-center" style={{ width: "min(72vw, 280px)", height: "min(72vw, 280px)" }}>
-        {/* Content revealed once the card parts */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-opacity"
-          style={{ opacity: showReveal ? 1 : 0, transitionDuration: reducedMotion ? "450ms" : "550ms" }}
-        >
-          <div className={reducedMotion ? "" : "bsk-flame-pop"} style={{ fontSize: 60, lineHeight: 1 }}>🔥</div>
-          <div className={reducedMotion ? "" : "bsk-text-pop"} style={{ fontSize: 28, fontWeight: 900, letterSpacing: "0.03em", color: "#ffffff", textShadow: "0 4px 24px rgba(0,0,0,0.5)" }}>
-            {days} DAY{days === 1 ? "" : "S"}
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", textTransform: "uppercase" }}>
-            Streak Broken
-          </div>
-        </div>
-
-        {!reducedMotion && showWhole && (
-          <div className={`bsk-card absolute inset-0 rounded-[28px] ${phase === "enter" ? "bsk-card-in" : ""} ${phase === "shake" ? "bsk-shake" : ""}`}>
-            {showCracked && (
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 280" fill="none">
-                <g stroke="rgba(255,255,255,0.85)" strokeWidth="1.4" strokeLinecap="round" style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }}>
-                  <path className="bsk-crack" style={{ animationDelay: "0ms" }} d="M140 30 L129 88 L152 110 L112 140 L140 178 L120 216 L140 252" />
-                  <path className="bsk-crack" style={{ animationDelay: "50ms" }} d="M140 140 L54 102 L26 120" />
-                  <path className="bsk-crack" style={{ animationDelay: "90ms" }} d="M140 140 L220 94 L252 108" />
-                  <path className="bsk-crack" style={{ animationDelay: "130ms" }} d="M140 140 L64 182 L30 198" />
-                  <path className="bsk-crack" style={{ animationDelay: "170ms" }} d="M140 140 L206 192 L240 210" />
-                </g>
-              </svg>
-            )}
-          </div>
-        )}
-
-        {!reducedMotion && showSplit && (
-          <>
-            <div className="bsk-half bsk-half-a absolute inset-0 rounded-[28px]" />
-            <div className="bsk-half bsk-half-b absolute inset-0 rounded-[28px]" />
-            {phase === "split" && (
-              <div className="absolute inset-0 pointer-events-none">
-                {shards.map((s, i) => (
-                  <div
-                    key={i}
-                    className="bsk-shard absolute"
-                    style={{
-                      left: "50%", top: "50%", width: s.size, height: s.size * 1.6,
-                      background: "linear-gradient(160deg, rgba(255,255,255,0.85), rgba(255,255,255,0.15))",
-                      borderRadius: 2,
-                      "--sx": `${s.sx}px`, "--sy": `${s.sy}px`, "--srot": `${s.rotate}deg`,
-                      animationDelay: `${s.delay}s`,
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <style>{`
-        .bsk-backdrop { animation: bskFadeIn 0.4s ease-out both; }
-        .bsk-backdrop-out { animation: bskFadeOut 0.6s ease-in both; }
-        @keyframes bskFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes bskFadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-        .bsk-card {
-          background: linear-gradient(160deg, rgba(255,255,255,0.30), rgba(255,255,255,0.11));
-          border: 1px solid rgba(255,255,255,0.45);
-          box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.08);
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-        }
-        .bsk-card-in { animation: bskCardIn 0.42s cubic-bezier(.2,.8,.3,1.15) both; }
-        @keyframes bskCardIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-
-        .bsk-crack { stroke-dasharray: 260; stroke-dashoffset: 260; animation: bskDraw 0.3s ease-out forwards; }
-        @keyframes bskDraw { to { stroke-dashoffset: 0; } }
-
-        .bsk-shake { animation: bskShake 0.28s ease-in-out both; }
-        @keyframes bskShake {
-          0% { transform: translate(0,0) rotate(0deg); }
-          20% { transform: translate(-3px,1px) rotate(-0.6deg); }
-          40% { transform: translate(3px,-1px) rotate(0.6deg); }
-          60% { transform: translate(-2px,2px) rotate(-0.4deg); }
-          80% { transform: translate(2px,-1px) rotate(0.4deg); }
-          100% { transform: translate(0,0) rotate(0deg); }
-        }
-
-        .bsk-half {
-          background: linear-gradient(160deg, rgba(255,255,255,0.30), rgba(255,255,255,0.11));
-          border: 1px solid rgba(255,255,255,0.45);
-          box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.5);
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-        }
-        .bsk-half-a { clip-path: polygon(0 0, 100% 0, 46% 46%, 34% 100%, 0 100%); animation: bskSplitA 0.7s cubic-bezier(.3,.7,.4,1) forwards; }
-        .bsk-half-b { clip-path: polygon(100% 0, 100% 100%, 34% 100%, 46% 46%); animation: bskSplitB 0.7s cubic-bezier(.3,.7,.4,1) forwards; }
-        @keyframes bskSplitA { to { transform: translate(-24px, 9px) rotate(-9deg); opacity: 0; } }
-        @keyframes bskSplitB { to { transform: translate(24px, -5px) rotate(8deg); opacity: 0; } }
-
-        .bsk-shard { opacity: 0; animation: bskShard 0.9s cubic-bezier(.2,.7,.3,1) forwards; }
-        @keyframes bskShard {
-          0% { opacity: 1; transform: translate(-50%, -50%) translate(0,0) rotate(0deg); }
-          100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) rotate(var(--srot)); }
-        }
-
-        .bsk-flame-pop { animation: bskPop 0.5s cubic-bezier(.34,1.56,.64,1) both; }
-        .bsk-text-pop { animation: bskPop 0.5s cubic-bezier(.34,1.56,.64,1) 0.06s both; }
-        @keyframes bskPop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
-
-        @media (prefers-reduced-motion: reduce) {
-          .bsk-backdrop, .bsk-backdrop-out, .bsk-card-in, .bsk-shake, .bsk-crack, .bsk-half-a, .bsk-half-b, .bsk-shard, .bsk-flame-pop, .bsk-text-pop {
-            animation: none !important;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 // ---------- FINISH BUTTON (bottom of workout content, only visible once started) ----------
 function FinishBar({ state, elapsedSeconds, volume, onFinish, onReset }) {
   if (state === "idle") return null;
@@ -1182,7 +901,7 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat }) 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {entries.length === 0 && (
           <div className="text-sm text-center py-16" style={{ color: C.textFaint }}>
-            No workouts logged yet.<br />Finish a workout and it'll show up here automatically.
+            No workouts logged yet.<br />Once you mark a set done, it'll show up here automatically.
           </div>
         )}
 
@@ -1348,7 +1067,7 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat }) 
 }
 
 // ---------- SETTINGS MENU ----------
-function SettingsMenu({ onClose, onSelectHistory, onSelectProgress, onExport, onImport, brokenStreakAnimEnabled, onToggleBrokenStreakAnim, onPreviewBrokenStreak }) {
+function SettingsMenu({ onClose, onSelectHistory, onSelectProgress, onExport, onImport }) {
   const [importStatus, setImportStatus] = useState(null); // { ok, msg }
   const fileInputRef = useRef(null);
 
@@ -1454,35 +1173,6 @@ function SettingsMenu({ onClose, onSelectHistory, onSelectProgress, onExport, on
             {importStatus.msg}
           </div>
         )}
-
-        <div className="text-[11px] uppercase tracking-[0.15em] font-bold mt-5 mb-2 px-1" style={{ color: C.textDim }}>Streak</div>
-        <div className="rounded-2xl px-4 py-3.5 mb-3 flex items-center justify-between gap-3" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
-          <div className="min-w-0">
-            <div className="text-sm font-bold" style={{ color: C.text }}>Broken Streak Animation</div>
-            <div className="text-xs mt-0.5" style={{ color: C.textFaint }}>Cinematic effect when a streak breaks</div>
-          </div>
-          <button
-            onClick={onToggleBrokenStreakAnim}
-            className="shrink-0 relative transition"
-            style={{ width: 46, height: 27, borderRadius: 999, backgroundColor: brokenStreakAnimEnabled ? "#1e7a34" : "#d9d9d9" }}
-            role="switch"
-            aria-checked={brokenStreakAnimEnabled}
-            aria-label="Toggle broken streak animation"
-          >
-            <span
-              className="absolute top-[2px] transition-all"
-              style={{ left: brokenStreakAnimEnabled ? 21 : 2, width: 23, height: 23, borderRadius: "50%", backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
-            />
-          </button>
-        </div>
-        <button
-          onClick={onPreviewBrokenStreak}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm mb-3 transition active:scale-[0.98]"
-          style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}`, color: C.text }}
-        >
-          <Flame size={15} color="#ef6a1f" fill="#ffb347" />
-          Preview Animation
-        </button>
       </div>
     </div>
   );
@@ -1924,44 +1614,13 @@ export default function WorkoutTracker() {
   const historyRef = useRef([]);
   useEffect(() => { historyRef.current = history; }, [history]);
 
-  // In-progress (not-yet-finished) session data lives here, completely separate from History.
-  // This is what lets you close the app mid-workout and resume later WITHOUT it ever
-  // counting as a completed workout, touching the streak, or showing up in History.
-  const [drafts, setDrafts] = useState({});
-  const [draftsLoaded, setDraftsLoaded] = useState(false);
-  const draftsRef = useRef({});
-  useEffect(() => { draftsRef.current = drafts; }, [drafts]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await storage.get("drafts");
-        const parsed = res ? JSON.parse(res.value) : {};
-        if (!cancelled) setDrafts(parsed && typeof parsed === "object" ? parsed : {});
-      } catch (e) {
-        if (!cancelled) setDrafts({});
-      }
-      if (!cancelled) setDraftsLoaded(true);
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (!draftsLoaded) return;
-    storage.set("drafts", JSON.stringify(drafts)).catch(() => {});
-  }, [drafts, draftsLoaded]);
-
   // Load the full workout history ONCE (single reliable key — no listing, no per-day round trips)
-  // History is the single source of truth for the streak, so only ever keep genuinely
-  // FINISHED workouts here. (Self-heals any in-progress records saved by older app versions.)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const res = await storage.get("history");
-        const parsed = res ? JSON.parse(res.value) : [];
-        if (!cancelled) setHistory(Array.isArray(parsed) ? parsed.filter((r) => r && r.finished) : []);
+        if (!cancelled) setHistory(res ? JSON.parse(res.value) : []);
       } catch (e) {
         if (!cancelled) setHistory([]);
       }
@@ -2021,29 +1680,16 @@ export default function WorkoutTracker() {
         orderRes = await storage.get(orderKey);
       } catch (e) {}
       if (cancelled) return;
-      const todayId2 = `${activeDay}:${todayStr}`;
-      const rec = historyRef.current.find((r) => r.id === todayId2 && isValidCompletedWorkout(r));
-      const draft = draftsRef.current[todayId2];
+      const rec = historyRef.current.find((r) => r.id === `${activeDay}:${todayStr}`);
       if (rec) {
-        // A finished workout already exists for today — show it as completed.
         setLogs(rec.logs || {});
         setSetCounts(rec.setCounts || {});
         setWarmupDone(rec.warmupDone || {});
         setSessionStart(rec.sessionStart || null);
         setSessionEnd(rec.sessionEnd || null);
-        setFinished(true);
+        setFinished(!!rec.finished);
         setSavedVolume(rec.volume || 0);
         setSavedDuration(rec.durationSec || 0);
-      } else if (draft) {
-        // Resume an unfinished, in-progress session. This never touches History or the streak.
-        setLogs(draft.logs || {});
-        setSetCounts(draft.setCounts || {});
-        setWarmupDone(draft.warmupDone || {});
-        setSessionStart(draft.sessionStart || null);
-        setSessionEnd(draft.sessionEnd || null);
-        setFinished(false);
-        setSavedVolume(0);
-        setSavedDuration(0);
       } else {
         setLogs({}); setSetCounts({}); setWarmupDone({});
         setSessionStart(null); setSessionEnd(null); setFinished(false);
@@ -2070,28 +1716,27 @@ export default function WorkoutTracker() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDay, historyLoaded, draftsLoaded, repeatToken]);
+  }, [activeDay, historyLoaded, repeatToken]);
 
-  // Live autosave of in-progress data (safety net so you can resume mid-workout) — this writes
-  // ONLY to the separate `drafts` store, never to History. Starting a workout or logging sets
-  // therefore can never affect History or the streak; only FINISH does that (see finishSession).
+  // Live autosave of in-progress data into the history array (safety net) — does not mark as finished/permanent
   useEffect(() => {
-    if (!loaded || !draftsLoaded || finished) return;
+    if (!loaded || finished) return;
     const hasData = !!sessionStart || Object.keys(logs).length > 0 || Object.values(warmupDone).some(Boolean);
-    setDrafts((prev) => {
-      if (!hasData) {
-        if (!(recordId in prev)) return prev;
-        const next = { ...prev };
-        delete next[recordId];
-        return next;
-      }
-      return {
-        ...prev,
-        [recordId]: { logs, setCounts, warmupDone, sessionStart, sessionEnd },
+    if (!hasData) return;
+    setHistory((prev) => {
+      const rec = {
+        id: recordId, dayId: activeDay, date: todayStr,
+        logs, setCounts, warmupDone,
+        sessionStart, sessionEnd, finished: false,
       };
+      const idx = prev.findIndex((r) => r.id === recordId);
+      if (idx === -1) return [rec, ...prev];
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...rec };
+      return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logs, setCounts, warmupDone, sessionStart, sessionEnd, loaded, draftsLoaded, finished, recordId]);
+  }, [logs, setCounts, warmupDone, sessionStart, sessionEnd, loaded, finished]);
 
   useEffect(() => {
     if (!sessionStart || sessionEnd) return;
@@ -2100,7 +1745,6 @@ export default function WorkoutTracker() {
   }, [sessionStart, sessionEnd]);
 
   // Load paused (manually preserved rest) dates once
-  const [pausedLoaded, setPausedLoaded] = useState(false);
   useEffect(() => {
     (async () => {
       try {
@@ -2109,7 +1753,6 @@ export default function WorkoutTracker() {
       } catch (e) {
         setPausedDates([]);
       }
-      setPausedLoaded(true);
     })();
   }, []);
 
@@ -2134,113 +1777,37 @@ export default function WorkoutTracker() {
     })();
   }, []);
 
-  // History is the single source of truth for the streak, and the streak is nothing more than
-  // a count of genuinely FINISHED workouts in it (rec.finished === true, written solely by
-  // finishSession, deduped by id). There is NO calendar walking here and NO concept of
-  // consecutive days — a skipped day never lowers this number. Starting a workout, logging
-  // sets, or hitting Reset never touches History, so none of that can move the streak. Adding
-  // a finished record increases it by one; deleting one decreases it by one — that's the whole
-  // rule, and it's why this recalculates straight from the `history` array every time it changes.
-  const computeStreakValue = useCallback((hist) => {
-    const seen = new Set();
+  const computeStreak = useCallback((pausedList, hist) => {
     let count = 0;
-    hist.forEach((r) => {
-      if (isValidCompletedWorkout(r) && !seen.has(r.id)) {
-        seen.add(r.id);
-        count++;
-      }
-    });
-    return count;
-  }, []);
-
-  // Separate from the streak NUMBER above: this decides only whether the broken-streak
-  // animation should fire. Skipping a day is always allowed and never touches the streak count,
-  // but a day that is neither a finished-workout day nor explicitly marked as a rest day (via
-  // the pause toggle) is the app's actual inactivity condition. We only need to look at the most
-  // recent fully-elapsed day (yesterday) and walk back over any *consecutive* rest-marked days
-  // before it — the moment we hit a workout day, everything before it is already "resolved" and
-  // irrelevant; the moment we hit an unmarked empty day, that's the break. Today is never checked
-  // here since it hasn't elapsed yet. No hardcoded weekday (e.g. Sunday) is ever treated specially.
-  const detectInactivityBreak = useCallback((pausedList, hist) => {
     let cursor = new Date();
-    cursor.setDate(cursor.getDate() - 1);
+    let isToday = true;
     for (let i = 0; i < 400; i++) {
       const dateStr = localDateStr(cursor);
-      const anyDone = hist.some((r) => r.date === dateStr && isValidCompletedWorkout(r));
-      if (anyDone) return false;
-      if (!pausedList.includes(dateStr)) return true;
+      const dow = cursor.getDay();
+      const isSunday = dow === 0;
+      const isPaused = pausedList.includes(dateStr);
+      if (isSunday || isPaused) {
+        cursor.setDate(cursor.getDate() - 1);
+        isToday = false;
+        continue;
+      }
+      // Any completed workout on this date counts — it doesn't have to be the "usual" split for that weekday
+      const anyDone = hist.some((r) => r.date === dateStr && Object.values(r.logs || {}).some((sets) => Object.values(sets).some((s) => s.done)));
+      if (anyDone) count++;
+      else if (isToday) { /* today not logged yet, don't break */ }
+      else break;
       cursor.setDate(cursor.getDate() - 1);
+      isToday = false;
     }
-    return false;
+    setStreak(count);
   }, []);
 
-  // ---- Broken-streak animation state ----
-  // Whether an inactivity break is the currently-active (already-flagged) state, persisted so a
-  // reload while still broken doesn't replay the animation — it only fires on the *transition*
-  // into a break, and again later only once a fresh break happens after being resolved.
-  const [brokenStreakActive, setBrokenStreakActive] = useState(false);
-  const [brokenStreakActiveLoaded, setBrokenStreakActiveLoaded] = useState(false);
-  const brokenStreakActiveRef = useRef(false);
-  useEffect(() => { brokenStreakActiveRef.current = brokenStreakActive; }, [brokenStreakActive]);
-  const [brokenStreakAnimEnabled, setBrokenStreakAnimEnabled] = useState(true);
-  const [brokenStreakAnimSettingLoaded, setBrokenStreakAnimSettingLoaded] = useState(false);
-  const [brokenStreakEvent, setBrokenStreakEvent] = useState(null); // { previousStreak, id } — real event
-  const [previewBrokenStreak, setPreviewBrokenStreak] = useState(false); // preview trigger
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await storage.get("brokenStreakActive");
-        setBrokenStreakActive(res ? res.value === "1" : false);
-      } catch (e) {
-        setBrokenStreakActive(false);
-      }
-      setBrokenStreakActiveLoaded(true);
-    })();
-    (async () => {
-      try {
-        const res = await storage.get("brokenStreakAnimEnabled");
-        setBrokenStreakAnimEnabled(res ? res.value !== "0" : true);
-      } catch (e) {
-        setBrokenStreakAnimEnabled(true);
-      }
-      setBrokenStreakAnimSettingLoaded(true);
-    })();
-  }, []);
-
-  const toggleBrokenStreakAnim = useCallback(() => {
-    setBrokenStreakAnimEnabled((prev) => {
-      const next = !prev;
-      storage.set("brokenStreakAnimEnabled", next ? "1" : "0").catch(() => {});
-      return next;
-    });
-  }, []);
-
-  // The streak NUMBER: purely derived from History, recalculated whenever History changes and
-  // whenever the app loads. Nothing else — not pausedDates, not the broken-streak state below —
-  // is allowed to influence it.
+  // Recompute whenever the saved history actually changes (this is the real source of truth —
+  // watching `logs` directly was one render behind, so today's session never got counted)
   useEffect(() => {
     if (!historyLoaded) return;
-    setStreak(computeStreakValue(history));
-  }, [history, historyLoaded, computeStreakValue]);
-
-  // The broken-streak ANIMATION: fires only on the transition into the app's defined inactivity
-  // condition (see detectInactivityBreak), never merely because a day was skipped and marked as
-  // rest, and never because of Reset/logging/opening the app. The "previousStreak" it displays is
-  // just the current (count-based) streak value, since that count itself is never altered by a break.
-  useEffect(() => {
-    if (!historyLoaded || !pausedLoaded || !brokenStreakActiveLoaded || !brokenStreakAnimSettingLoaded) return;
-    const isBroken = detectInactivityBreak(pausedDates, history);
-    if (isBroken === brokenStreakActiveRef.current) return;
-
-    brokenStreakActiveRef.current = isBroken;
-    setBrokenStreakActive(isBroken);
-    storage.set("brokenStreakActive", isBroken ? "1" : "0").catch(() => {});
-
-    if (isBroken && brokenStreakAnimEnabled) {
-      setBrokenStreakEvent({ previousStreak: computeStreakValue(history), id: Date.now() });
-    }
-  }, [history, pausedDates, historyLoaded, pausedLoaded, brokenStreakActiveLoaded, brokenStreakAnimSettingLoaded, brokenStreakAnimEnabled, detectInactivityBreak, computeStreakValue]);
+    computeStreak(pausedDates, history);
+  }, [history, pausedDates, historyLoaded, computeStreak]);
 
   const isTodayPaused = pausedDates.includes(todayStr);
   const togglePauseToday = useCallback(async () => {
@@ -2367,9 +1934,6 @@ export default function WorkoutTracker() {
     setFinished(false);
   }, []);
   const resetSession = useCallback(() => {
-    // Resets the on-screen session only. It intentionally does NOT touch History, so a
-    // workout that was already finished today keeps its place in History (and the streak)
-    // unless the person explicitly deletes it from the History screen.
     setSessionStart(null);
     setSessionEnd(null);
     setFinished(false);
@@ -2379,25 +1943,15 @@ export default function WorkoutTracker() {
     setSetCounts({});
     setWarmupDone({});
     sessionBestRef.current = {};
-    setDrafts((prev) => {
-      if (!(recordId in prev)) return prev;
-      const next = { ...prev };
-      delete next[recordId];
-      return next;
-    });
-  }, [recordId]);
+  }, []);
 
   // ---- Backup / restore (single file covers History + Progress, since Progress is derived from history) ----
-  // Export only ever includes genuinely valid completed workouts — empty/null records (e.g. an
-  // accidental Start->Finish with nothing logged) are excluded entirely. The JSON shape itself
-  // (app/version/exportedAt/history/prBaselines/streakPauses) is unchanged; only the contents of
-  // `history` are filtered.
   const exportData = useCallback(() => {
     const payload = {
       app: "aesthetic-ascension-trakd",
       version: 1,
       exportedAt: new Date().toISOString(),
-      history: history.filter(isValidCompletedWorkout),
+      history,
       prBaselines,
       streakPauses: pausedDates,
     };
@@ -2421,11 +1975,7 @@ export default function WorkoutTracker() {
 
       setHistory((prev) => {
         const map = new Map(prev.map((r) => [r.id, r]));
-        // Only finished workouts belong in History at all — skip any in-progress records that
-        // might exist in an older backup file. (Empty finished-but-doneSets:0 records are kept
-        // here, same as they always have been, since completed-workout calculations everywhere
-        // else — the streak, stats, and export — ignore them via isValidCompletedWorkout.)
-        importedHistory.forEach((r) => { if (r && r.id && r.finished) map.set(r.id, r); });
+        importedHistory.forEach((r) => { if (r && r.id) map.set(r.id, r); });
         return Array.from(map.values());
       });
 
@@ -2439,10 +1989,7 @@ export default function WorkoutTracker() {
         setPausedDates((prev) => Array.from(new Set([...prev, ...parsed.streakPauses])));
       }
 
-      // The reported count reflects only genuinely valid completed workouts among those imported —
-      // e.g. importing 5 records where only 3 pass isValidCompletedWorkout reports "Imported 3".
-      const validImportedCount = importedHistory.filter(isValidCompletedWorkout).length;
-      return { ok: true, msg: `Imported ${validImportedCount} workout${validImportedCount === 1 ? "" : "s"}.` };
+      return { ok: true, msg: `Imported ${importedHistory.length} workout${importedHistory.length === 1 ? "" : "s"}.` };
     } catch (e) {
       return { ok: false, msg: "Couldn't read that file — make sure it's an unmodified export." };
     }
@@ -2466,25 +2013,7 @@ export default function WorkoutTracker() {
     return a + v;
   }, 0), 0);
 
-  const finishingRef = useRef(false);
   const finishSession = useCallback(async () => {
-    // Guard against duplicate History entries / streak bumps from repeated FINISH presses
-    // (e.g. a fast double-tap before the UI has re-rendered into the "finished" state).
-    if (finished || finishingRef.current) return;
-    finishingRef.current = true;
-
-    // VALIDATION GATE: FINISH is not itself what saves a workout — a workout is only valid
-    // (and therefore savable to History) if EVERY set for the day was actually logged as done.
-    // An accidental Start->Finish with nothing logged, or a Finish pressed partway through with
-    // sets still remaining, is a no-op: no History write, no state change of any kind, and —
-    // because the streak is derived solely from History (see computeStreakValue above) — no
-    // streak change either. This is the only gate that matters; there is no separate
-    // "streak + 1" anywhere for FINISH to trigger even if it wanted to.
-    if (totalSets <= 0 || doneSets < totalSets) {
-      finishingRef.current = false;
-      return;
-    }
-
     const end = Date.now();
     const start = sessionStart || end;
     const durationSec = Math.max(0, Math.round((end - start) / 1000));
@@ -2533,9 +2062,6 @@ export default function WorkoutTracker() {
     setSavedDuration(durationSec);
     setPrBaselines(newBaselines);
 
-    // This is the ONLY place a History record is ever written for a finish. The streak is never
-    // touched here directly — it is recalculated afterward, purely from the resulting `history`
-    // array, by the dedicated effect above (history → computeStreakValue(history) → setStreak).
     setHistory((prev) => {
       const idx = prev.findIndex((r) => r.id === recordId);
       if (idx === -1) return [record, ...prev];
@@ -2544,18 +2070,8 @@ export default function WorkoutTracker() {
       return next;
     });
 
-    // The session is now a completed History entry — it no longer needs a separate draft.
-    setDrafts((prev) => {
-      if (!(recordId in prev)) return prev;
-      const next = { ...prev };
-      delete next[recordId];
-      return next;
-    });
-
     await Promise.all(baselineWrites);
-    finishingRef.current = false;
-  }, [finished, sessionStart, day, getOrderedExercises, prBaselines, logs, setCounts, warmupDone, liveVolume, doneSets, totalSets, recordId, activeDay, todayStr]);
-
+  }, [sessionStart, day, getOrderedExercises, prBaselines, logs, setCounts, warmupDone, liveVolume, doneSets, totalSets, recordId, activeDay, todayStr]);
 
   const elapsedMs = sessionStart ? ((finished ? sessionEnd : (sessionEnd || nowTick)) - sessionStart) : 0;
   const elapsedSeconds = finished ? savedDuration : Math.max(0, Math.floor(elapsedMs / 1000));
@@ -2737,9 +2253,6 @@ export default function WorkoutTracker() {
           onSelectProgress={() => { setShowSettingsMenu(false); setShowProgress(true); }}
           onExport={exportData}
           onImport={importData}
-          brokenStreakAnimEnabled={brokenStreakAnimEnabled}
-          onToggleBrokenStreakAnim={toggleBrokenStreakAnim}
-          onPreviewBrokenStreak={() => { setShowSettingsMenu(false); setPreviewBrokenStreak(true); }}
         />
       )}
 
@@ -2755,15 +2268,6 @@ export default function WorkoutTracker() {
       {showProgress && <ProgressModal onClose={() => setShowProgress(false)} history={history} weightLog={weightLog} onLogWeight={handleLogWeight} />}
 
       {prToast && <PRToast pr={prToast} onDone={() => setPrToast(null)} />}
-
-      {/* Real broken-streak event — fires at most once per genuine break, never on reload/rerender */}
-      {brokenStreakEvent && (
-        <BrokenStreakOverlay days={brokenStreakEvent.previousStreak} onDone={() => setBrokenStreakEvent(null)} />
-      )}
-      {/* Settings > Preview Animation — identical component/animation, sample data only, never touches real data */}
-      {previewBrokenStreak && (
-        <BrokenStreakOverlay days={47} onDone={() => setPreviewBrokenStreak(false)} />
-      )}
     </div>
   );
 }
