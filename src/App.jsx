@@ -182,7 +182,7 @@ const PROGRAM = [
         { id: "p1-h2l", name: "High to Low Cable Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
-        { id: "p1-shp", name: "Shoulder Press", sets: 3, reps: "8-10" },
+        { id: "p1-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
         { id: "p1-lat", name: "Lateral Raises", sets: 3, reps: "8-10" },
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
@@ -191,8 +191,8 @@ const PROGRAM = [
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
-        { id: "p1-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
-        { id: "p1-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
+        { id: "p1-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
+        { id: "p1-lr", name: "Leg Raises", sets: 2, reps: "10-12" },
       ]},
     ],
   },
@@ -237,7 +237,7 @@ const PROGRAM = [
         { id: "p2-h2l", name: "High to Low Fly", sets: 3, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
-        { id: "p2-shp", name: "Shoulder Press", sets: 3, reps: "8-10" },
+        { id: "p2-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
         { id: "p2-lat", name: "Lateral Raises", sets: 3, reps: "8-10" },
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
       ]},
@@ -263,8 +263,8 @@ const PROGRAM = [
         { id: "pl2-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
-        { id: "pl2-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
-        { id: "pl2-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
+        { id: "pl2-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
+        { id: "pl2-lr", name: "Leg Raises", sets: 2, reps: "10-12" },
       ]},
     ],
   },
@@ -272,8 +272,9 @@ const PROGRAM = [
     id: "shoarms", day: "Saturday", title: "Shoulder + Arms", warmupKey: "shoarms",
     groups: [
       { name: "Shoulders", exercises: [
+        { id: "sa-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
         { id: "sa-clr", name: "Cable Lateral Raise", sets: 3, reps: "8-10" },
-        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 1, reps: "8-10" },
+        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 2, reps: "8-10" },
         { id: "sa-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
