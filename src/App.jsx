@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -435,7 +435,7 @@ function buildEntryFromRecord(rec) {
           groupVolume += (parseFloat(s.weight) || 0) * (parseFloat(s.reps) || 0);
         }
       });
-      return { name: ex.name, sets };
+      return { id: ex.id, name: ex.name, sets };
     });
     volume += groupVolume;
     return { name: g.name, exercises, volume: groupVolume };
@@ -1186,13 +1186,28 @@ function FinishBar({ state, elapsedSeconds, volume, doneSets, totalSets, onFinis
 }
 
 // ---------- HISTORY MODAL ----------
-function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat }) {
+function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat, onEditSet }) {
   const [expanded, setExpanded] = useState(null);
   const [confirmDeleteKey, setConfirmDeleteKey] = useState(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [confirmRepeatKey, setConfirmRepeatKey] = useState(null);
+  const [editingSet, setEditingSet] = useState(null); // { recKey, exId, si }
+  const [editWeight, setEditWeight] = useState("");
+  const [editReps, setEditReps] = useState("");
 
   const entries = useMemo(() => buildHistoryEntries(history), [history]);
+
+  const startEdit = (recKey, exId, si, weight, reps) => {
+    setEditingSet({ recKey, exId, si });
+    setEditWeight(weight ?? "");
+    setEditReps(reps ?? "");
+  };
+  const cancelEdit = () => setEditingSet(null);
+  const saveEdit = () => {
+    if (!editingSet) return;
+    onEditSet(editingSet.recKey, editingSet.exId, editingSet.si, editWeight, editReps);
+    setEditingSet(null);
+  };
 
   const fmtDate = (d) => {
     const today = localDateStr();
@@ -1378,15 +1393,50 @@ function HistoryModal({ onClose, history, onDeleteOne, onDeleteAll, onRepeat }) 
                         <div key={i} className="mb-2">
                           <div className="text-xs font-semibold mb-1" style={{ color: C.text }}>{ex.name}</div>
                           <div className="flex flex-wrap gap-1.5">
-                            {ex.sets.map((s, si) => (
-                              <div
-                                key={si}
-                                className="text-[11px] px-2 py-1 rounded-lg font-medium tabular-nums"
-                                style={{ backgroundColor: s.done ? C.accent : C.inputBg, color: s.done ? "#ffffff" : C.textFaint, border: s.done ? "none" : `1px solid ${C.inputBorder}` }}
-                              >
-                                {s.weight || "–"}kg × {s.reps || "–"}
-                              </div>
-                            ))}
+                            {ex.sets.map((s, si) => {
+                              const isEditing = editingSet && editingSet.recKey === e.key && editingSet.exId === ex.id && editingSet.si === si;
+                              if (isEditing) {
+                                return (
+                                  <div
+                                    key={si}
+                                    className="flex items-center gap-1 pl-1.5 pr-1 py-1 rounded-lg"
+                                    style={{ backgroundColor: C.inputBg, border: `1px solid ${C.accent}` }}
+                                  >
+                                    <input
+                                      type="number" inputMode="decimal" autoFocus placeholder="kg"
+                                      value={editWeight} onChange={(ev) => setEditWeight(ev.target.value)}
+                                      className="w-10 bg-transparent text-[11px] font-medium text-center tabular-nums focus:outline-none"
+                                      style={{ color: C.text }}
+                                    />
+                                    <span className="text-[10px]" style={{ color: C.textFaint }}>kg×</span>
+                                    <input
+                                      type="number" inputMode="numeric" placeholder="reps"
+                                      value={editReps} onChange={(ev) => setEditReps(ev.target.value)}
+                                      className="w-9 bg-transparent text-[11px] font-medium text-center tabular-nums focus:outline-none"
+                                      style={{ color: C.text }}
+                                    />
+                                    <button onClick={saveEdit} className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 active:scale-95" style={{ backgroundColor: C.accent }}>
+                                      <Check size={11} color="#ffffff" strokeWidth={3} />
+                                    </button>
+                                    <button onClick={cancelEdit} className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 active:scale-95" style={{ backgroundColor: "#ffffff", border: `1px solid ${C.inputBorder}` }}>
+                                      <X size={10} color={C.textFaint} />
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <button
+                                  key={si}
+                                  onClick={() => s.done && startEdit(e.key, ex.id, si, s.weight, s.reps)}
+                                  disabled={!s.done}
+                                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-medium tabular-nums transition active:scale-95"
+                                  style={{ backgroundColor: s.done ? C.accent : C.inputBg, color: s.done ? "#ffffff" : C.textFaint, border: s.done ? "none" : `1px solid ${C.inputBorder}` }}
+                                >
+                                  {s.weight || "–"}kg × {s.reps || "–"}
+                                  {s.done && <Pencil size={9} color="rgba(255,255,255,0.75)" />}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
@@ -2855,6 +2905,25 @@ export default function WorkoutTracker() {
           onDeleteOne={(id) => setHistory((prev) => prev.filter((r) => r.id !== id))}
           onDeleteAll={() => setHistory([])}
           onRepeat={repeatWorkout}
+          onEditSet={(recordId, exId, setIndex, weight, reps) => {
+            setHistory((prev) => prev.map((r) => {
+              if (r.id !== recordId) return r;
+              const logs = { ...(r.logs || {}) };
+              const exLog = { ...(logs[exId] || {}) };
+              const prevSet = exLog[setIndex] || {};
+              exLog[setIndex] = { ...prevSet, weight, reps };
+              logs[exId] = exLog;
+              // Recompute this record's total volume from every logged set so the corrected
+              // weight/reps immediately flow into History, weekly summaries, and Progress.
+              let recomputedVolume = 0;
+              Object.values(logs).forEach((el) => {
+                Object.values(el || {}).forEach((set) => {
+                  if (set && set.done) recomputedVolume += (parseFloat(set.weight) || 0) * (parseFloat(set.reps) || 0);
+                });
+              });
+              return { ...r, logs, volume: recomputedVolume };
+            }));
+          }}
         />
       )}
       {showProgress && <ProgressModal onClose={() => setShowProgress(false)} history={history} weightLog={weightLog} onLogWeight={handleLogWeight} />}
