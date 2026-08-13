@@ -183,8 +183,8 @@ const PROGRAM = [
       ]},
       { name: "Shoulders", exercises: [
         { id: "p1-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "p1-lat", name: "Lateral Raises", sets: 3, reps: "8-10" },
-        { id: "p1-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
+        { id: "p1-lat", name: "Lateral Raises", sets: 4, reps: "8-10" },
+        { id: "p1-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
         { id: "p1-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
@@ -238,8 +238,8 @@ const PROGRAM = [
       ]},
       { name: "Shoulders", exercises: [
         { id: "p2-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "p2-lat", name: "Lateral Raises", sets: 3, reps: "8-10" },
-        { id: "p2-rdf", name: "Rear Delt Fly", sets: 3, reps: "8-10" },
+        { id: "p2-lat", name: "Lateral Raises", sets: 4, reps: "8-10" },
+        { id: "p2-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
         { id: "p2-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
