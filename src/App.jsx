@@ -187,7 +187,7 @@ const PROGRAM = [
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p1-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p1-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
@@ -201,7 +201,7 @@ const PROGRAM = [
     groups: [
       { name: "Back", exercises: [
         { id: "pl1-pu", name: "Pull Ups", sets: 3, reps: "8-10" },
-        { id: "pl1-cgpd", name: "Close Grip Pulldown", sets: 3, reps: "8-10" },
+        { id: "pl1-cgpd", name: "Single Arm Pulldown", sets: 3, reps: "8-10" },
         { id: "pl1-dbr", name: "DB Row (Chest Supported)", sets: 3, reps: "8-10" },
         { id: "pl1-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
       ]},
@@ -242,7 +242,7 @@ const PROGRAM = [
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "S-A Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "p2-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "p2-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
     ],
@@ -251,9 +251,9 @@ const PROGRAM = [
     id: "pull2", day: "Friday", title: "Pull 2 + Abs", warmupKey: "pull",
     groups: [
       { name: "Back", exercises: [
-        { id: "pl2-wpd", name: "Wide Pull Down", sets: 3, reps: "8-10" },
-        { id: "pl2-cgr", name: "Close Grip Row", sets: 3, reps: "8-10" },
-        { id: "pl2-dbr", name: "DB Row (Chest Supported)", sets: 2, reps: "8-10" },
+        { id: "pl2-wpd", name: "Single Arm Pulldown", sets: 3, reps: "8-10" },
+        { id: "pl2-cgr", name: "Close Grip Row", sets: 2, reps: "8-10" },
+        { id: "pl2-dbr", name: "DB Row (Chest Supported)", sets: 3, reps: "8-10" },
         { id: "pl2-kelso", name: "Kelso Shrugs", sets: 1, reps: "8-10" },
         { id: "pl2-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
       ]},
@@ -283,7 +283,7 @@ const PROGRAM = [
         { id: "sa-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "sa-ote", name: "Overhead Tricep Extension", sets: 3, reps: "8-10" },
+        { id: "sa-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
         { id: "sa-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
       ]},
     ],
@@ -313,7 +313,7 @@ const WARMUPS = {
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
     { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
     { id: "w3", text: "Shoulder rotations x 10", dur: "" },
-    { id: "w4", text: "Light band curls/ppushdowns x 10", dur: "" },
+    { id: "w4", text: "Light band curls/Pushdowns x 10", dur: "" },
   ]},
 };
 
