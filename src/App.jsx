@@ -177,22 +177,21 @@ const PROGRAM = [
     groups: [
       { name: "Chest", exercises: [
         { id: "p1-fb", name: "Flat Bench Press", sub: "PR Maxxing", sets: 1, reps: "—" },
-        { id: "p1-incline", name: "Incline Press", sets: 3, reps: "8-10" },
-        { id: "p1-pecdec", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
-        { id: "p1-h2l", name: "High to Low Cable Fly", sets: 3, reps: "8-10" },
+        { id: "p1-incline", name: "Incline Press", sets: 2, reps: "8-10" },
+        { id: "p1-h2l", name: "High to Low Cable Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
         { id: "p1-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "p1-lat", name: "Lateral Raises", sets: 4, reps: "8-10" },
+        { id: "p1-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 4, reps: "8-10" },
         { id: "p1-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p1-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
-        { id: "p1-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
+        { id: "p1-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
+        { id: "p1-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
         { id: "p1-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
-        { id: "p1-lr", name: "Leg Raises", sets: 2, reps: "10-12" },
+        { id: "p1-lr", name: "Leg Raises", sets: 2, reps: "15" },
       ]},
     ],
   },
@@ -200,10 +199,11 @@ const PROGRAM = [
     id: "pull1", day: "Tuesday", title: "Pull 1", warmupKey: "pull",
     groups: [
       { name: "Back", exercises: [
-        { id: "pl1-pu", name: "Pull Ups", sets: 3, reps: "8-10" },
-        { id: "pl1-cgpd", name: "Single Arm Pulldown", sets: 3, reps: "8-10" },
-        { id: "pl1-dbr", name: "DB Row (Chest Supported)", sets: 3, reps: "8-10" },
-        { id: "pl1-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
+        { id: "pl1-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
+        { id: "pl1-cgpd", name: "Single Arm Pulldown", sets: 2, reps: "8-10" },
+        { id: "pl1-dbr", name: "Barbell Row", sets: 2, reps: "8-10" },
+        { id: "pl1-sar", name: "Single Arm Row", sets: 2, reps: "8-10" },
+        { id: "pl1-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
         { id: "pl1-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
@@ -232,18 +232,17 @@ const PROGRAM = [
     groups: [
       { name: "Chest", exercises: [
         { id: "p2-fb", name: "Flat Bench Press", sub: "Warmup", sets: 1, reps: "8-10" },
-        { id: "p2-incline", name: "Incline Press", sets: 3, reps: "8-10" },
-        { id: "p2-pecdec", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
-        { id: "p2-h2l", name: "High to Low Fly", sets: 3, reps: "8-10" },
+        { id: "p2-incline", name: "Incline Press", sets: 2, reps: "8-10" },
+        { id: "p2-h2l", name: "High to Low Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
         { id: "p2-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "p2-lat", name: "Lateral Raises", sets: 4, reps: "8-10" },
+        { id: "p2-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 4, reps: "8-10" },
         { id: "p2-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
-        { id: "p2-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
+        { id: "p2-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
+        { id: "p2-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
       ]},
     ],
   },
@@ -251,11 +250,12 @@ const PROGRAM = [
     id: "pull2", day: "Friday", title: "Pull 2 + Abs", warmupKey: "pull",
     groups: [
       { name: "Back", exercises: [
-        { id: "pl2-wpd", name: "Single Arm Pulldown", sets: 3, reps: "8-10" },
-        { id: "pl2-cgr", name: "Close Grip Row", sets: 2, reps: "8-10" },
-        { id: "pl2-dbr", name: "DB Row (Chest Supported)", sets: 3, reps: "8-10" },
-        { id: "pl2-kelso", name: "Kelso Shrugs", sets: 1, reps: "8-10" },
-        { id: "pl2-pullover", name: "Lat Pullover", sets: 3, reps: "8-10" },
+        { id: "pl2-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
+        { id: "pl2-wpd", name: "Single Arm Pulldown", sets: 2, reps: "8-10" },
+        { id: "pl2-dbr", name: "Barbell Row", sets: 2, reps: "8-10" },
+        { id: "pl2-sar", name: "Single Arm Row", sets: 2, reps: "8-10" },
+        { id: "pl2-kelso", name: "Kelso Shrugs", sub: "OPTIONAL", sets: 1, reps: "8-10" },
+        { id: "pl2-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
         { id: "pl2-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
@@ -264,7 +264,7 @@ const PROGRAM = [
       ]},
       { name: "Abs", exercises: [
         { id: "pl2-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
-        { id: "pl2-lr", name: "Leg Raises", sets: 2, reps: "10-12" },
+        { id: "pl2-lr", name: "Leg Raises", sets: 2, reps: "15" },
       ]},
     ],
   },
@@ -273,8 +273,7 @@ const PROGRAM = [
     groups: [
       { name: "Shoulders", exercises: [
         { id: "sa-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "sa-clr", name: "Cable Lateral Raise", sets: 3, reps: "8-10" },
-        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 2, reps: "8-10" },
+        { id: "sa-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 4, reps: "8-10" },
         { id: "sa-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
@@ -283,8 +282,8 @@ const PROGRAM = [
         { id: "sa-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
-        { id: "sa-ote", name: "SA Overhead Tricep Extension", sets: 3, reps: "8-10" },
-        { id: "sa-tpd", name: "Tricep Pushdown", sets: 3, reps: "8-10" },
+        { id: "sa-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
+        { id: "sa-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
       ]},
     ],
   },
