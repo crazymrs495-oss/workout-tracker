@@ -317,10 +317,18 @@ const WARMUPS = {
 };
 
 const REST_DEFAULT = 120;
-const WEEKDAY_MAP = { 1: "push1", 2: "pull1", 3: "legs", 4: "push2", 5: "pull2", 6: "shoarms" };
+const WEEKDAY_MAP = {
+  0: "push1",     // Sunday
+  1: "pull1",     // Monday
+  2: "legs",      // Tuesday
+  3: null,        // Wednesday — Rest
+  4: "chestback", // Thursday
+  5: "shoarms",   // Friday
+  6: null,        // Saturday — Rest
+};
 
 function todayId() {
-  return WEEKDAY_MAP[new Date().getDay()] || "push1";
+  return WEEKDAY_MAP[new Date().getDay()] ?? null;
 }
 // Local calendar-day string (YYYY-MM-DD) — NOT toISOString(), which is UTC and
 // silently shifts to the wrong day for anyone not sitting at UTC+0, especially
