@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil, Footprints, RotateCcw } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -173,7 +173,7 @@ function playGlassCrackSound() {
 // ---------- DATA ----------
 const PROGRAM = [
   {
-    id: "push1", day: "Monday", title: "Push 1 + Abs", warmupKey: "push",
+    id: "push1", day: "Sunday", title: "Push 1 + Abs", warmupKey: "push",
     groups: [
       { name: "Chest", exercises: [
         { id: "p1-fb", name: "Flat Bench Press", sub: "PR Maxxing", sets: 1, reps: "—" },
@@ -196,7 +196,7 @@ const PROGRAM = [
     ],
   },
   {
-    id: "pull1", day: "Tuesday", title: "Pull 1", warmupKey: "pull",
+    id: "pull1", day: "Monday", title: "Pull 1", warmupKey: "pull",
     groups: [
       { name: "Back", exercises: [
         { id: "pl1-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
@@ -213,7 +213,7 @@ const PROGRAM = [
     ],
   },
   {
-    id: "legs", day: "Wednesday", title: "Legs + Abs", warmupKey: "legs",
+    id: "legs", day: "Tuesday", title: "Legs + Abs", warmupKey: "legs",
     groups: [
       { name: "Abs", exercises: [
         { id: "lg-cc", name: "Cable Crunch", sets: 3, reps: "8-10" },
@@ -228,48 +228,24 @@ const PROGRAM = [
     ],
   },
   {
-    id: "push2", day: "Thursday", title: "Push 2", warmupKey: "push",
+    id: "chestback", day: "Thursday", title: "Chest & Back", warmupKey: "chestback",
     groups: [
       { name: "Chest", exercises: [
-        { id: "p2-fb", name: "Flat Bench Press", sub: "Warmup", sets: 1, reps: "8-10" },
-        { id: "p2-incline", name: "Incline Press", sets: 2, reps: "8-10" },
-        { id: "p2-h2l", name: "High to Low Fly", sets: 2, reps: "8-10" },
+        { id: "cb-fb", name: "Flat Bench Press", sets: 1, reps: "8-10" },
+        { id: "cb-incline", name: "Incline Press", sets: 2, reps: "8-10" },
+        { id: "cb-h2l", name: "High to Low Cable Fly", sets: 2, reps: "8-10" },
       ]},
-      { name: "Shoulders", exercises: [
-        { id: "p2-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
-        { id: "p2-dblr", name: "DB Lateral Raise", sub: "Drop Set", sets: 4, reps: "8-10" },
-        { id: "p2-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
-      ]},
-      { name: "Triceps", exercises: [
-        { id: "p2-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
-        { id: "p2-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
-      ]},
-    ],
-  },
-  {
-    id: "pull2", day: "Friday", title: "Pull 2 + Abs", warmupKey: "pull",
-    groups: [
       { name: "Back", exercises: [
-        { id: "pl2-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
-        { id: "pl2-wpd", name: "Single Arm Pulldown", sets: 2, reps: "8-10" },
-        { id: "pl2-dbr", name: "Barbell Row", sets: 2, reps: "8-10" },
-        { id: "pl2-sar", name: "Single Arm Row", sets: 2, reps: "8-10" },
-        { id: "pl2-kelso", name: "Kelso Shrugs", sub: "OPTIONAL", sets: 1, reps: "8-10" },
-        { id: "pl2-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
-      ]},
-      { name: "Biceps", exercises: [
-        { id: "pl2-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
-        { id: "pl2-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl2-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
-      ]},
-      { name: "Abs", exercises: [
-        { id: "pl2-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
-        { id: "pl2-lr", name: "Leg Raises", sets: 2, reps: "15" },
+        { id: "cb-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
+        { id: "cb-wgpd", name: "Wide Grip Pulldown", sets: 2, reps: "8-10" },
+        { id: "cb-br", name: "Barbell Row", sets: 2, reps: "8-10" },
+        { id: "cb-scr", name: "Seated Cable Row", sets: 2, reps: "8-10" },
+        { id: "cb-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
       ]},
     ],
   },
   {
-    id: "shoarms", day: "Saturday", title: "Shoulder + Arms", warmupKey: "shoarms",
+    id: "shoarms", day: "Friday", title: "Shoulder + Arms", warmupKey: "shoarms",
     groups: [
       { name: "Shoulders", exercises: [
         { id: "sa-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
@@ -314,21 +290,21 @@ const WARMUPS = {
     { id: "w3", text: "Shoulder rotations x 10", dur: "" },
     { id: "w4", text: "Light band curls/Pushdowns x 10", dur: "" },
   ]},
+  chestback: { label: "Chest & Back Warm-up", items: [
+    { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
+    { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
+    { id: "w3", text: "Band pull-aparts x 15", dur: "" },
+    { id: "w4", text: "Push-up x 10", dur: "" },
+  ]},
 };
 
 const REST_DEFAULT = 120;
-const WEEKDAY_MAP = {
-  0: "push1",     // Sunday
-  1: "pull1",     // Monday
-  2: "legs",      // Tuesday
-  3: null,        // Wednesday — Rest
-  4: "chestback", // Thursday
-  5: "shoarms",   // Friday
-  6: null,        // Saturday — Rest
-};
+// 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat. Wednesday & Saturday are rest days
+// (no entry), so todayId() falls back to Push 1 on those days.
+const WEEKDAY_MAP = { 0: "push1", 1: "pull1", 2: "legs", 4: "chestback", 5: "shoarms" };
 
 function todayId() {
-  return WEEKDAY_MAP[new Date().getDay()] ?? null;
+  return WEEKDAY_MAP[new Date().getDay()] || "push1";
 }
 // Local calendar-day string (YYYY-MM-DD) — NOT toISOString(), which is UTC and
 // silently shifts to the wrong day for anyone not sitting at UTC+0, especially
@@ -673,6 +649,165 @@ function UnitConverter() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- TREADMILL / CARDIO SECTION ----------
+const TREADMILL_PRESETS = [10, 20, 30, 45];
+
+function TreadmillSection({ onClose, muted, onToggleMute }) {
+  const [presetMin, setPresetMin] = useState(20);
+  const [remaining, setRemaining] = useState(20 * 60);
+  const [running, setRunning] = useState(false);
+  const [started, setStarted] = useState(false);
+  const total = presetMin * 60;
+  const intervalRef = useRef(null);
+  const tickedRef = useRef(new Set());
+  const finishedRef = useRef(false);
+
+  useEffect(() => {
+    if (running) {
+      intervalRef.current = setInterval(() => {
+        setRemaining((r) => {
+          const next = r - 1;
+          if (!muted && next > 0 && next <= 3 && !tickedRef.current.has(next)) {
+            tickedRef.current.add(next);
+            playTick();
+          }
+          if (next <= 0) {
+            clearInterval(intervalRef.current);
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            if (!muted && !finishedRef.current) {
+              finishedRef.current = true;
+              playBeep(5);
+            }
+            setRunning(false);
+            return 0;
+          }
+          return next;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [running, muted]);
+
+  const selectPreset = (min) => {
+    if (running) return;
+    setPresetMin(min);
+    setRemaining(min * 60);
+    tickedRef.current = new Set();
+    finishedRef.current = false;
+    setStarted(false);
+  };
+
+  const adjust = (deltaSec) => {
+    setRemaining((r) => Math.max(0, r + deltaSec));
+    tickedRef.current = new Set();
+    finishedRef.current = false;
+  };
+
+  const toggleRunning = () => {
+    unlockAudio();
+    if (remaining <= 0) return;
+    setStarted(true);
+    setRunning((r) => !r);
+  };
+
+  const reset = () => {
+    setRunning(false);
+    setStarted(false);
+    setRemaining(presetMin * 60);
+    tickedRef.current = new Set();
+    finishedRef.current = false;
+  };
+
+  const pct = total > 0 ? ((total - remaining) / total) * 100 : 0;
+  const finished = started && remaining <= 0;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: "#ffffff" }}>
+      <div className="px-4 pt-5 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.cardBorder}` }}>
+        <div className="flex items-center gap-2">
+          <Footprints size={18} color={C.text} />
+          <span className="text-sm font-bold" style={{ color: C.text }}>Treadmill</span>
+        </div>
+        <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+          <X size={15} color={C.text} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-1 h-3.5 rounded-full" style={{ backgroundColor: C.blue }} />
+          <span className="text-[11px] uppercase tracking-[0.15em] font-bold" style={{ color: C.textDim }}>Walking Cardio</span>
+        </div>
+        <div className="text-xs mb-6 text-center" style={{ color: C.textFaint }}>Pick a duration, then start walking</div>
+
+        <div className="flex items-center gap-2 mb-8 flex-wrap justify-center">
+          {TREADMILL_PRESETS.map((min) => {
+            const active = presetMin === min;
+            return (
+              <button
+                key={min}
+                onClick={() => selectPreset(min)}
+                disabled={running}
+                className="text-xs px-3.5 py-1.5 rounded-full transition font-semibold active:scale-95"
+                style={{ backgroundColor: active ? C.accent : C.chipBg, border: `1px solid ${active ? C.accent : C.chipBorder}`, color: active ? "#ffffff" : C.textDim, opacity: running ? 0.5 : 1 }}
+              >
+                {min} min
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full max-w-[260px] aspect-square rounded-full flex items-center justify-center mb-8" style={{ border: `10px solid ${C.chipBg}` }}>
+          <svg className="absolute inset-0" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+            <circle cx="50" cy="50" r="45" fill="none" stroke={finished ? "#2E7D32" : C.accent} strokeWidth="5" strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 45}`} strokeDashoffset={`${2 * Math.PI * 45 * (1 - pct / 100)}`} style={{ transition: "stroke-dashoffset 1s linear" }} />
+          </svg>
+          <div className="flex flex-col items-center">
+            <div className="text-4xl font-black tabular-nums tracking-tight" style={{ color: C.text }}>{fmtTime(remaining)}</div>
+            <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: finished ? "#2E7D32" : C.textFaint }}>
+              {finished ? "Done" : running ? "Walking" : started ? "Paused" : "Ready"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <button onClick={() => adjust(-60)} disabled={running} className="w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}`, opacity: running ? 0.5 : 1 }}>
+            <Minus size={16} color={C.text} />
+          </button>
+          <button
+            onClick={toggleRunning}
+            className="w-16 h-12 rounded-full flex items-center justify-center active:scale-95 transition"
+            style={{ backgroundColor: C.accent }}
+          >
+            {running ? <Pause size={18} color="#ffffff" fill="#ffffff" /> : <Play size={18} color="#ffffff" fill="#ffffff" />}
+          </button>
+          <button onClick={() => adjust(60)} disabled={running} className="w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}`, opacity: running ? 0.5 : 1 }}>
+            <Plus size={16} color={C.text} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { unlockAudio(); onToggleMute(); }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold transition active:scale-95"
+            style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}`, color: C.textDim }}
+          >
+            {muted ? <VolumeX size={13} color={C.textFaint} /> : <Volume2 size={13} color={C.textDim} />}
+            {muted ? "Muted" : "Sound on"}
+          </button>
+          <button
+            onClick={reset}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold transition active:scale-95"
+            style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}`, color: C.textDim }}
+          >
+            <RotateCcw size={13} color={C.textDim} />
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2045,6 +2180,7 @@ export default function WorkoutTracker() {
   const [restDuration, setRestDuration] = useState(REST_DEFAULT);
   const [restKey, setRestKey] = useState(0);
   const [showRest, setShowRest] = useState(false);
+  const [showTreadmill, setShowTreadmill] = useState(false);
   const [muted, setMuted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -2743,6 +2879,14 @@ export default function WorkoutTracker() {
               </span>
             </button>
             <button
+              onClick={() => setShowTreadmill(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
+              style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
+              title="Treadmill walk"
+            >
+              <Footprints size={16} color={C.text} />
+            </button>
+            <button
               onClick={() => setShowSettingsMenu(true)}
               className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
               style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
@@ -2890,6 +3034,10 @@ export default function WorkoutTracker() {
 
       {showRest && (
         <RestTimer key={restKey} duration={restDuration} onClose={() => setShowRest(false)} muted={muted} onToggleMute={() => setMuted((m) => !m)} />
+      )}
+
+      {showTreadmill && (
+        <TreadmillSection onClose={() => setShowTreadmill(false)} muted={muted} onToggleMute={() => setMuted((m) => !m)} />
       )}
 
       {showSettingsMenu && (
