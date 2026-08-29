@@ -3,6 +3,70 @@ import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
+// ---------- MUSIC LIBRARY STORAGE (IndexedDB) ----------
+// localStorage can only hold strings, so the actual audio bytes live in IndexedDB instead —
+// this is what lets picked songs survive a refresh or fully closing the browser, since the
+// file's contents are copied into the browser's own storage rather than just a reference to
+// wherever it lives on the phone (which the browser can't be handed back without the user
+// re-picking it).
+const MUSIC_DB_NAME = "trakdMusicDB";
+const MUSIC_STORE = "tracks";
+function openMusicDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error("no indexeddb")); return; }
+    const req = window.indexedDB.open(MUSIC_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(MUSIC_STORE)) {
+        db.createObjectStore(MUSIC_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGetAllTracks() {
+  try {
+    const db = await openMusicDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(MUSIC_STORE, "readonly");
+      const req = tx.objectStore(MUSIC_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    return [];
+  }
+}
+async function idbPutTrack(track) {
+  try {
+    const db = await openMusicDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(MUSIC_STORE, "readwrite");
+      tx.objectStore(MUSIC_STORE).put(track);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+async function idbDeleteTrack(id) {
+  try {
+    const db = await openMusicDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(MUSIC_STORE, "readwrite");
+      tx.objectStore(MUSIC_STORE).delete(id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // ---------- COLOR TOKENS (black & white minimalism) ----------
 const C = {
   bg: "#ffffff",
@@ -1001,7 +1065,7 @@ function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFi
           Add Songs From Phone
         </button>
         <div className="text-[11px] text-center mb-5" style={{ color: C.textFaint }}>
-          Songs stay loaded for this session — if you fully close the app, add them again next time.
+          Songs are saved on this device — they'll still be here next time you open the app.
         </div>
 
         {tracks.length === 0 && (
@@ -2635,7 +2699,36 @@ export default function WorkoutTracker() {
   const [musicCurrentTime, setMusicCurrentTime] = useState(0);
   const [musicDuration, setMusicDuration] = useState(0);
   const [showMusicLibrary, setShowMusicLibrary] = useState(false);
+  const [musicLibraryLoaded, setMusicLibraryLoaded] = useState(false);
   const currentTrack = musicTracks.find((t) => t.id === currentTrackId) || null;
+
+  // Restore the music library from IndexedDB on load — the songs' actual bytes were saved
+  // there, so this survives a refresh or fully closing the browser with no re-picking needed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const stored = await idbGetAllTracks();
+      if (cancelled) return;
+      const restored = stored.map((t) => ({ id: t.id, name: t.name, url: URL.createObjectURL(t.blob) }));
+      setMusicTracks(restored);
+      if (restored.length) {
+        try {
+          const res = await storage.get("lastMusicTrackId");
+          const lastId = res?.value;
+          if (lastId && restored.some((t) => t.id === lastId)) setCurrentTrackId(lastId);
+        } catch (e) {}
+      }
+      setMusicLibraryLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Remember which track was active so reopening the app re-selects it (without autoplaying —
+  // browsers block audio autoplay until the person interacts with the page anyway).
+  useEffect(() => {
+    if (!musicLibraryLoaded || !currentTrackId) return;
+    storage.set("lastMusicTrackId", currentTrackId).catch(() => {});
+  }, [currentTrackId, musicLibraryLoaded]);
 
   const nextTrack = useCallback(() => {
     setMusicTracks((tracks) => {
@@ -2711,6 +2804,11 @@ export default function WorkoutTracker() {
     setMusicTracks((prev) => [...prev, ...newTracks]);
     setCurrentTrackId((cur) => cur || newTracks[0].id);
     setIsMusicPlaying((p) => p || true);
+    // Persist the actual file bytes to IndexedDB so the library survives a refresh or
+    // fully closing the browser — not just an in-memory blob URL for this tab session.
+    files.forEach((f, i) => {
+      idbPutTrack({ id: newTracks[i].id, name: newTracks[i].name, blob: f }).catch(() => {});
+    });
   }, []);
 
   const handlePlayTrack = useCallback((id) => {
@@ -2729,6 +2827,7 @@ export default function WorkoutTracker() {
       setIsMusicPlaying(false);
       return null;
     });
+    idbDeleteTrack(id).catch(() => {});
   }, []);
 
   const handleToggleMusicPlayPause = useCallback(() => {
@@ -3341,17 +3440,6 @@ export default function WorkoutTracker() {
               <Footprints size={16} color={C.text} />
             </button>
             <button
-              onClick={() => setShowMusicLibrary(true)}
-              className="relative w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
-              style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
-              title="Music"
-            >
-              <Music size={16} color={C.text} />
-              {isMusicPlaying && currentTrack && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: C.accent }} />
-              )}
-            </button>
-            <button
               onClick={() => setShowSettingsMenu(true)}
               className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
               style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
@@ -3434,6 +3522,17 @@ export default function WorkoutTracker() {
             <span className="relative">Start Workout</span>
           </button>
         )}
+        <button
+          onClick={() => setShowMusicLibrary(true)}
+          className="relative w-8 h-8 rounded-full flex items-center justify-center transition active:scale-95 shrink-0"
+          style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
+          title="Music"
+        >
+          <Music size={14} color={C.text} />
+          {isMusicPlaying && currentTrack && (
+            <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: C.accent }} />
+          )}
+        </button>
         {sessionStart && !finished && (
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ backgroundColor: "#eef7ee", border: "1px solid #bfe3bf" }}>
             <Timer size={12} color="#1e7a34" />
