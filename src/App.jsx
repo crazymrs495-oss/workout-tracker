@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil, Footprints, RotateCcw } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil, Footprints, RotateCcw, Music, SkipBack, SkipForward } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -665,7 +665,7 @@ function estimateCalories(elapsedSec, weightKg) {
 }
 // (kcal/min = MET x 3.5 x weightKg / 200 — the 3.5 here is the fixed VO2 constant, unrelated to WALK_MET)
 
-function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpenHistory }) {
+function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpenHistory, musicBarActive }) {
   const [presetMin, setPresetMin] = useState(20);
   const [remaining, setRemaining] = useState(20 * 60);
   const [running, setRunning] = useState(false);
@@ -775,7 +775,7 @@ function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpe
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center" style={{ paddingBottom: musicBarActive ? 88 : 24 }}>
         <div className="flex items-center gap-2 mb-1">
           <div className="w-1 h-3.5 rounded-full" style={{ backgroundColor: C.blue }} />
           <span className="text-[11px] uppercase tracking-[0.15em] font-bold" style={{ color: C.textDim }}>Walking Cardio</span>
@@ -967,7 +967,109 @@ function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profi
   );
 }
 
-// ---------- WARMUP CARD ----------
+// ---------- MUSIC (local files picked from the phone; playback continues across the whole app) ----------
+function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFiles, onPlayTrack, onRemoveTrack, onTogglePlayPause }) {
+  const fileInputRef = useRef(null);
+
+  return (
+    <div className="fixed inset-0 z-[62] flex flex-col" style={{ backgroundColor: "#ffffff" }}>
+      <div className="px-4 pt-5 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.cardBorder}` }}>
+        <div className="flex items-center gap-2">
+          <Music size={18} color={C.text} />
+          <span className="text-sm font-bold" style={{ color: C.text }}>Music</span>
+        </div>
+        <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+          <X size={15} color={C.text} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4" style={{ paddingBottom: currentTrackId ? 88 : 16 }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => { onAddFiles(e.target.files); e.target.value = ""; }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm mb-2 transition active:scale-[0.98]"
+          style={{ backgroundColor: "#111111", color: "#ffffff" }}
+        >
+          <Plus size={16} color="#ffffff" strokeWidth={2.5} />
+          Add Songs From Phone
+        </button>
+        <div className="text-[11px] text-center mb-5" style={{ color: C.textFaint }}>
+          Songs stay loaded for this session — if you fully close the app, add them again next time.
+        </div>
+
+        {tracks.length === 0 && (
+          <div className="text-xs text-center mt-10" style={{ color: C.textFaint }}>No songs added yet</div>
+        )}
+
+        {tracks.map((t) => {
+          const active = t.id === currentTrackId;
+          return (
+            <div
+              key={t.id}
+              className="flex items-center justify-between rounded-2xl px-3.5 py-3 mb-2"
+              style={{ backgroundColor: active ? "#111111" : C.cardBg, border: `1px solid ${active ? "#111111" : C.cardBorder}` }}
+            >
+              <button
+                onClick={() => (active ? onTogglePlayPause() : onPlayTrack(t.id))}
+                className="flex items-center gap-2.5 flex-1 min-w-0 text-left active:scale-[0.98] transition"
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: active ? "rgba(255,255,255,0.15)" : C.chipBg }}>
+                  {active && isPlaying ? <Pause size={13} color="#ffffff" fill="#ffffff" /> : <Play size={13} color={active ? "#ffffff" : C.text} fill={active ? "#ffffff" : C.text} />}
+                </div>
+                <span className="text-sm font-semibold truncate" style={{ color: active ? "#ffffff" : C.text }}>{t.name}</span>
+              </button>
+              <button onClick={() => onRemoveTrack(t.id)} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ml-2 active:scale-95 transition" style={{ backgroundColor: active ? "rgba(255,255,255,0.15)" : C.chipBg }}>
+                <Trash2 size={13} color={active ? "#ffffff" : C.danger} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onNext, onPrev, onOpenLibrary }) {
+  if (!track) return null;
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  return (
+    <div className="fixed left-0 right-0 bottom-0 z-[72] px-3 pb-3">
+      <div
+        className="max-w-[480px] mx-auto rounded-2xl overflow-hidden"
+        style={{ backgroundColor: "#111111", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
+      >
+        <div className="h-[2px] w-full" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+          <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: C.accent }} />
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <button onClick={onOpenLibrary} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
+              <Music size={14} color="#ffffff" />
+            </div>
+            <span className="text-xs font-semibold truncate" style={{ color: "#ffffff" }}>{track.name}</span>
+          </button>
+          <button onClick={onPrev} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+            <SkipBack size={15} color="#ffffff" fill="#ffffff" />
+          </button>
+          <button onClick={onTogglePlayPause} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+            {isPlaying ? <Pause size={15} color="#ffffff" fill="#ffffff" /> : <Play size={15} color="#ffffff" fill="#ffffff" />}
+          </button>
+          <button onClick={onNext} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+            <SkipForward size={15} color="#ffffff" fill="#ffffff" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function WarmupCard({ warmupKey, done, onToggle }) {
   const [open, setOpen] = useState(false);
   const data = WARMUPS[warmupKey];
@@ -2525,6 +2627,121 @@ export default function WorkoutTracker() {
     }
   }, [pendingCardioElapsed, logCardioSession]);
 
+  // ---- Music (local files picked from the phone) — plays across the whole app, workout or cardio ----
+  const audioRef = useRef(null);
+  const [musicTracks, setMusicTracks] = useState([]);
+  const [currentTrackId, setCurrentTrackId] = useState(null);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [musicCurrentTime, setMusicCurrentTime] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(0);
+  const [showMusicLibrary, setShowMusicLibrary] = useState(false);
+  const currentTrack = musicTracks.find((t) => t.id === currentTrackId) || null;
+
+  const nextTrack = useCallback(() => {
+    setMusicTracks((tracks) => {
+      if (!tracks.length) return tracks;
+      setCurrentTrackId((cur) => {
+        const idx = tracks.findIndex((t) => t.id === cur);
+        const nextIdx = idx === -1 ? 0 : (idx + 1) % tracks.length;
+        return tracks[nextIdx].id;
+      });
+      return tracks;
+    });
+    setIsMusicPlaying(true);
+  }, []);
+  const prevTrack = useCallback(() => {
+    setMusicTracks((tracks) => {
+      if (!tracks.length) return tracks;
+      setCurrentTrackId((cur) => {
+        const idx = tracks.findIndex((t) => t.id === cur);
+        const prevIdx = idx === -1 ? 0 : (idx - 1 + tracks.length) % tracks.length;
+        return tracks[prevIdx].id;
+      });
+      return tracks;
+    });
+    setIsMusicPlaying(true);
+  }, []);
+  const nextTrackRef = useRef(nextTrack);
+  useEffect(() => { nextTrackRef.current = nextTrack; }, [nextTrack]);
+
+  // Wire the <audio> element's events once
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => nextTrackRef.current();
+    const onTimeUpdate = () => setMusicCurrentTime(audio.currentTime || 0);
+    const onLoadedMeta = () => setMusicDuration(audio.duration || 0);
+    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMeta);
+    return () => {
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMeta);
+    };
+  }, []);
+
+  // Swap the source whenever the active track changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
+    if (audio.src !== currentTrack.url) {
+      audio.src = currentTrack.url;
+      setMusicCurrentTime(0);
+      if (isMusicPlaying) audio.play().catch(() => {});
+    }
+  }, [currentTrackId]);
+
+  // Play/pause in sync with state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
+    if (isMusicPlaying) audio.play().catch(() => {});
+    else audio.pause();
+  }, [isMusicPlaying]);
+
+  const handleAddMusicFiles = useCallback((fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const newTracks = files.map((f, i) => ({
+      id: `m${Date.now()}_${i}`,
+      name: f.name.replace(/\.[a-zA-Z0-9]+$/, ""),
+      url: URL.createObjectURL(f),
+    }));
+    setMusicTracks((prev) => [...prev, ...newTracks]);
+    setCurrentTrackId((cur) => cur || newTracks[0].id);
+    setIsMusicPlaying((p) => p || true);
+  }, []);
+
+  const handlePlayTrack = useCallback((id) => {
+    setCurrentTrackId(id);
+    setIsMusicPlaying(true);
+  }, []);
+
+  const handleRemoveTrack = useCallback((id) => {
+    setMusicTracks((prev) => {
+      const track = prev.find((t) => t.id === id);
+      if (track) { try { URL.revokeObjectURL(track.url); } catch (e) {} }
+      return prev.filter((t) => t.id !== id);
+    });
+    setCurrentTrackId((cur) => {
+      if (cur !== id) return cur;
+      setIsMusicPlaying(false);
+      return null;
+    });
+  }, []);
+
+  const handleToggleMusicPlayPause = useCallback(() => {
+    setCurrentTrackId((cur) => {
+      if (!cur && musicTracks.length) {
+        setIsMusicPlaying(true);
+        return musicTracks[0].id;
+      }
+      return cur;
+    });
+    setIsMusicPlaying((p) => (currentTrackId ? !p : true));
+  }, [musicTracks, currentTrackId]);
+
   // Hydrate the on-screen session (logs/sets/warmup/timer) for the active day from history + load that day's exercise order
   useEffect(() => {
     let cancelled = false;
@@ -3124,6 +3341,17 @@ export default function WorkoutTracker() {
               <Footprints size={16} color={C.text} />
             </button>
             <button
+              onClick={() => setShowMusicLibrary(true)}
+              className="relative w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
+              style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
+              title="Music"
+            >
+              <Music size={16} color={C.text} />
+              {isMusicPlaying && currentTrack && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: C.accent }} />
+              )}
+            </button>
+            <button
               onClick={() => setShowSettingsMenu(true)}
               className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
               style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}
@@ -3257,7 +3485,7 @@ export default function WorkoutTracker() {
       </div>
 
       {/* Finish Workout — only appears once started, fixed at the bottom of the workout content in normal flow */}
-      <div className="pb-28">
+      <div className="pb-28" style={currentTrack ? { paddingBottom: 112 } : undefined}>
         <FinishBar
           state={finishState}
           elapsedSeconds={elapsedSeconds}
@@ -3280,6 +3508,7 @@ export default function WorkoutTracker() {
           onToggleMute={() => setMuted((m) => !m)}
           onFinishSession={handleFinishCardioSession}
           onOpenHistory={() => setShowCardioHistory(true)}
+          musicBarActive={!!currentTrack}
         />
       )}
 
@@ -3300,6 +3529,34 @@ export default function WorkoutTracker() {
           initialHeightCm={cardioProfile?.heightCm}
           onCancel={() => { setShowCardioProfilePrompt(false); setPendingCardioElapsed(null); }}
           onSave={handleSaveCardioProfile}
+        />
+      )}
+
+      <audio ref={audioRef} />
+
+      {showMusicLibrary && (
+        <MusicLibraryModal
+          onClose={() => setShowMusicLibrary(false)}
+          tracks={musicTracks}
+          currentTrackId={currentTrackId}
+          isPlaying={isMusicPlaying}
+          onAddFiles={handleAddMusicFiles}
+          onPlayTrack={handlePlayTrack}
+          onRemoveTrack={handleRemoveTrack}
+          onTogglePlayPause={handleToggleMusicPlayPause}
+        />
+      )}
+
+      {!showMusicLibrary && !showCardioProfilePrompt && !showCardioHistory && !showSettingsMenu && !showHistory && !showProgress && !brokenStreakEvent && !previewBrokenStreak && currentTrack && (
+        <MiniMusicPlayer
+          track={currentTrack}
+          isPlaying={isMusicPlaying}
+          currentTime={musicCurrentTime}
+          duration={musicDuration}
+          onTogglePlayPause={handleToggleMusicPlayPause}
+          onNext={nextTrack}
+          onPrev={prevTrack}
+          onOpenLibrary={() => setShowMusicLibrary(true)}
         />
       )}
 
