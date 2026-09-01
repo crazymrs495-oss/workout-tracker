@@ -1136,7 +1136,7 @@ function formatMusicTime(t) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onSeek, onOpenLibrary }) {
+function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onSeek, onNext, onPrev, onOpenLibrary }) {
   const [dragTime, setDragTime] = useState(null);
   if (!track) return null;
   const safeDuration = duration > 0 ? duration : 0;
@@ -1156,8 +1156,14 @@ function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlay
             </div>
             <span className="text-xs font-semibold truncate" style={{ color: "#ffffff" }}>{track.name}</span>
           </button>
+          <button onClick={onPrev} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+            <SkipBack size={15} color="#ffffff" fill="#ffffff" />
+          </button>
           <button onClick={onTogglePlayPause} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
             {isPlaying ? <Pause size={15} color="#ffffff" fill="#ffffff" /> : <Play size={15} color="#ffffff" fill="#ffffff" />}
+          </button>
+          <button onClick={onNext} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+            <SkipForward size={15} color="#ffffff" fill="#ffffff" />
           </button>
         </div>
 
@@ -3740,6 +3746,8 @@ export default function WorkoutTracker() {
           duration={musicDuration}
           onTogglePlayPause={handleToggleMusicPlayPause}
           onSeek={handleMusicSeek}
+          onNext={nextTrack}
+          onPrev={prevTrack}
           onOpenLibrary={() => setShowMusicLibrary(true)}
         />
       )}
