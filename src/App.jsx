@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil, Footprints, RotateCcw, Music, SkipBack, SkipForward } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronRight, Play, Pause, Plus, Minus, Dumbbell, Trash2, X, Volume2, VolumeX, ArrowLeftRight, Scale, GripHorizontal, Settings, Flame, Timer, Square, Award, AlertTriangle, Flag, TrendingUp, Calendar, Download, Upload, Repeat, Pencil, Footprints, RotateCcw, Music, SkipBack, SkipForward, Search } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { storage } from "./lib/storage";
 
@@ -1034,6 +1034,10 @@ function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profi
 // ---------- MUSIC (local files picked from the phone; playback continues across the whole app) ----------
 function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFiles, onPlayTrack, onRemoveTrack, onTogglePlayPause }) {
   const fileInputRef = useRef(null);
+  const [query, setQuery] = useState("");
+  const filteredTracks = query.trim()
+    ? tracks.filter((t) => t.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : tracks;
 
   return (
     <div className="fixed inset-0 z-[62] flex flex-col" style={{ backgroundColor: "#ffffff" }}>
@@ -1064,15 +1068,40 @@ function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFi
           <Plus size={16} color="#ffffff" strokeWidth={2.5} />
           Add Songs From Phone
         </button>
-        <div className="text-[11px] text-center mb-5" style={{ color: C.textFaint }}>
+        <div className="text-[11px] text-center mb-4" style={{ color: C.textFaint }}>
           Songs are saved on this device — they'll still be here next time you open the app.
         </div>
+
+        {tracks.length > 0 && (
+          <div
+            className="flex items-center gap-2 rounded-2xl px-3.5 mb-4"
+            style={{ backgroundColor: C.inputBg, border: `1px solid ${C.inputBorder}` }}
+          >
+            <Search size={15} color={C.textFaint} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search songs"
+              className="flex-1 min-w-0 bg-transparent py-3 text-sm outline-none"
+              style={{ color: C.text }}
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: C.chipBg }}>
+                <X size={11} color={C.textFaint} />
+              </button>
+            )}
+          </div>
+        )}
 
         {tracks.length === 0 && (
           <div className="text-xs text-center mt-10" style={{ color: C.textFaint }}>No songs added yet</div>
         )}
 
-        {tracks.map((t) => {
+        {tracks.length > 0 && filteredTracks.length === 0 && (
+          <div className="text-xs text-center mt-10" style={{ color: C.textFaint }}>No songs match "{query}"</div>
+        )}
+
+        {filteredTracks.map((t) => {
           const active = t.id === currentTrackId;
           return (
             <div
@@ -1100,37 +1129,87 @@ function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFi
   );
 }
 
-function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onNext, onPrev, onOpenLibrary }) {
+function formatMusicTime(t) {
+  if (!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onSeek, onOpenLibrary }) {
+  const [dragTime, setDragTime] = useState(null);
   if (!track) return null;
-  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const safeDuration = duration > 0 ? duration : 0;
+  const shownTime = dragTime !== null ? dragTime : currentTime;
+  const pct = safeDuration > 0 ? Math.min(100, Math.max(0, (shownTime / safeDuration) * 100)) : 0;
 
   return (
     <div className="fixed left-0 right-0 bottom-0 z-[72] px-3 pb-3">
       <div
-        className="max-w-[480px] mx-auto rounded-2xl overflow-hidden"
+        className="max-w-[480px] mx-auto rounded-2xl overflow-hidden px-3.5 pt-3 pb-2.5"
         style={{ backgroundColor: "#111111", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
       >
-        <div className="h-[2px] w-full" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
-          <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: C.accent }} />
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2.5">
+        <div className="flex items-center gap-2.5 mb-2.5">
           <button onClick={onOpenLibrary} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
               <Music size={14} color="#ffffff" />
             </div>
             <span className="text-xs font-semibold truncate" style={{ color: "#ffffff" }}>{track.name}</span>
           </button>
-          <button onClick={onPrev} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
-            <SkipBack size={15} color="#ffffff" fill="#ffffff" />
-          </button>
           <button onClick={onTogglePlayPause} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
             {isPlaying ? <Pause size={15} color="#ffffff" fill="#ffffff" /> : <Play size={15} color="#ffffff" fill="#ffffff" />}
           </button>
-          <button onClick={onNext} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
-            <SkipForward size={15} color="#ffffff" fill="#ffffff" />
-          </button>
+        </div>
+
+        <div className="relative flex items-center h-4">
+          <div className="absolute left-0 right-0 h-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: C.accent }} />
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={safeDuration || 0}
+            step={0.1}
+            value={shownTime}
+            onChange={(e) => setDragTime(parseFloat(e.target.value))}
+            onInput={(e) => setDragTime(parseFloat(e.target.value))}
+            onPointerUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+            onMouseUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+            onTouchEnd={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+            className="relative w-full appearance-none bg-transparent music-seek-slider"
+            style={{ height: 16 }}
+            disabled={!safeDuration}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-0.5">
+          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(shownTime)}</span>
+          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(safeDuration)}</span>
         </div>
       </div>
+      <style>{`
+        .music-seek-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+          cursor: pointer;
+          margin-top: 0px;
+        }
+        .music-seek-slider::-moz-range-thumb {
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: none;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+          cursor: pointer;
+        }
+        .music-seek-slider::-webkit-slider-runnable-track { background: transparent; }
+        .music-seek-slider::-moz-range-track { background: transparent; }
+      `}</style>
     </div>
   );
 }
@@ -2841,6 +2920,13 @@ export default function WorkoutTracker() {
     setIsMusicPlaying((p) => (currentTrackId ? !p : true));
   }, [musicTracks, currentTrackId]);
 
+  const handleMusicSeek = useCallback((time) => {
+    const audio = audioRef.current;
+    if (!audio || !isFinite(time)) return;
+    audio.currentTime = time;
+    setMusicCurrentTime(time);
+  }, []);
+
   // Hydrate the on-screen session (logs/sets/warmup/timer) for the active day from history + load that day's exercise order
   useEffect(() => {
     let cancelled = false;
@@ -3653,8 +3739,7 @@ export default function WorkoutTracker() {
           currentTime={musicCurrentTime}
           duration={musicDuration}
           onTogglePlayPause={handleToggleMusicPlayPause}
-          onNext={nextTrack}
-          onPrev={prevTrack}
+          onSeek={handleMusicSeek}
           onOpenLibrary={() => setShowMusicLibrary(true)}
         />
       )}
