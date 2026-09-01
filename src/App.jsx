@@ -1035,9 +1035,45 @@ function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profi
 function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFiles, onPlayTrack, onRemoveTrack, onTogglePlayPause }) {
   const fileInputRef = useRef(null);
   const [query, setQuery] = useState("");
+  const [pendingFiles, setPendingFiles] = useState(null);
+  const [duplicateNames, setDuplicateNames] = useState([]);
   const filteredTracks = query.trim()
     ? tracks.filter((t) => t.name.toLowerCase().includes(query.trim().toLowerCase()))
     : tracks;
+
+  const normalizeName = (n) => n.replace(/\.[a-zA-Z0-9]+$/, "").trim().toLowerCase();
+
+  const handleFilesChosen = (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const existingNames = new Set(tracks.map((t) => normalizeName(t.name)));
+    const dupes = files.filter((f) => existingNames.has(normalizeName(f.name)));
+    if (dupes.length) {
+      setPendingFiles(files);
+      setDuplicateNames(dupes.map((f) => f.name.replace(/\.[a-zA-Z0-9]+$/, "")));
+    } else {
+      onAddFiles(files);
+    }
+  };
+
+  const handleSkipDuplicates = () => {
+    const existingNames = new Set(tracks.map((t) => normalizeName(t.name)));
+    const nonDupes = (pendingFiles || []).filter((f) => !existingNames.has(normalizeName(f.name)));
+    if (nonDupes.length) onAddFiles(nonDupes);
+    setPendingFiles(null);
+    setDuplicateNames([]);
+  };
+
+  const handleAddAnyway = () => {
+    if (pendingFiles && pendingFiles.length) onAddFiles(pendingFiles);
+    setPendingFiles(null);
+    setDuplicateNames([]);
+  };
+
+  const handleCancelAdd = () => {
+    setPendingFiles(null);
+    setDuplicateNames([]);
+  };
 
   return (
     <div className="fixed inset-0 z-[62] flex flex-col" style={{ backgroundColor: "#ffffff" }}>
@@ -1058,7 +1094,7 @@ function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFi
           accept="audio/*"
           multiple
           className="hidden"
-          onChange={(e) => { onAddFiles(e.target.files); e.target.value = ""; }}
+          onChange={(e) => { handleFilesChosen(e.target.files); e.target.value = ""; }}
         />
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -1125,6 +1161,35 @@ function MusicLibraryModal({ onClose, tracks, currentTrackId, isPlaying, onAddFi
           );
         })}
       </div>
+
+      {pendingFiles && duplicateNames.length > 0 && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-6" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="w-full max-w-xs rounded-3xl p-5" style={{ backgroundColor: "#ffffff" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle size={18} color="#c81e1e" />
+              <span className="text-sm font-bold" style={{ color: C.text }}>
+                {duplicateNames.length === 1 ? "Song already added" : "Some songs already added"}
+              </span>
+            </div>
+            <p className="text-xs mb-4" style={{ color: C.textFaint }}>
+              {duplicateNames.length === 1
+                ? <>"{duplicateNames[0]}" is already in your library. Skip it, or add it anyway?</>
+                : <>These are already in your library: {duplicateNames.join(", ")}. Skip the duplicate{duplicateNames.length === 1 ? "" : "s"}, or add anyway?</>}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button onClick={handleSkipDuplicates} className="w-full text-sm font-bold py-2.5 rounded-2xl" style={{ backgroundColor: "#111111", color: "#ffffff" }}>
+                Skip Duplicate{duplicateNames.length === 1 ? "" : "s"}
+              </button>
+              <button onClick={handleAddAnyway} className="w-full text-sm font-semibold py-2.5 rounded-2xl" style={{ backgroundColor: C.chipBg, color: C.textDim }}>
+                Add Anyway
+              </button>
+              <button onClick={handleCancelAdd} className="w-full text-xs font-semibold py-2 rounded-2xl" style={{ color: C.textFaint }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
