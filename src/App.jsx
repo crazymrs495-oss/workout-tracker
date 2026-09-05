@@ -729,7 +729,7 @@ function estimateCalories(elapsedSec, weightKg) {
 }
 // (kcal/min = MET x 3.5 x weightKg / 200 — the 3.5 here is the fixed VO2 constant, unrelated to WALK_MET)
 
-function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpenHistory, musicBarActive }) {
+function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpenHistory, onOpenCalorieCalculator, musicBarActive }) {
   const [presetMin, setPresetMin] = useState(20);
   const [remaining, setRemaining] = useState(20 * 60);
   const [running, setRunning] = useState(false);
@@ -832,6 +832,9 @@ function TreadmillSection({ onClose, muted, onToggleMute, onFinishSession, onOpe
         <div className="flex items-center gap-1.5">
           <button onClick={onOpenHistory} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }} title="Cardio history">
             <Calendar size={15} color={C.text} />
+          </button>
+          <button onClick={onOpenCalorieCalculator} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }} title="Calorie calculator">
+            <Flame size={15} color="#ef6a1f" fill="#ffb347" />
           </button>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
             <X size={15} color={C.text} />
@@ -974,7 +977,7 @@ function CardioProfileModal({ initialWeightKg, initialHeightCm, onCancel, onSave
 }
 
 // ---------- CARDIO HISTORY (separate from workout History) ----------
-function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profile, onEditProfile }) {
+function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profile, onEditProfile, onOpenCalorieCalculator }) {
   const sorted = [...sessions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
   return (
@@ -984,9 +987,14 @@ function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profi
           <Footprints size={18} color={C.text} />
           <span className="text-sm font-bold" style={{ color: C.text }}>Cardio History</span>
         </div>
-        <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
-          <X size={15} color={C.text} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={onOpenCalorieCalculator} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }} title="Calorie calculator">
+            <Flame size={15} color="#ef6a1f" fill="#ffb347" />
+          </button>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+            <X size={15} color={C.text} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -1025,6 +1033,113 @@ function CardioHistoryModal({ onClose, sessions, onDeleteOne, onDeleteAll, profi
           <button onClick={onDeleteAll} className="w-full text-center text-xs font-semibold mt-2 py-2.5">
             <span style={{ color: C.danger }}>Clear all cardio history</span>
           </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- CALORIE (BMR/TDEE) CALCULATOR ----------
+const ACTIVITY_LEVELS = [
+  { key: "sedentary", label: "Sedentary", sub: "Little/no exercise", multiplier: 1.2 },
+  { key: "light", label: "Light activity", sub: "1-3 days/week", multiplier: 1.375 },
+  { key: "moderate", label: "Moderate", sub: "3-5 days/week", multiplier: 1.55 },
+  { key: "very", label: "Very active", sub: "6-7 days/week", multiplier: 1.725 },
+  { key: "extra", label: "Extra active", sub: "Physical job + training", multiplier: 1.9 },
+];
+
+function BmrCalculatorModal({ onClose }) {
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [age, setAge] = useState("");
+  const [activityKey, setActivityKey] = useState("moderate");
+
+  const w = parseFloat(weight);
+  const h = parseFloat(height);
+  const a = parseFloat(age);
+  const valid = w > 0 && h > 0 && a > 0;
+  // Mifflin-St Jeor BMR, then scaled by the selected activity multiplier to get daily calorie intake.
+  const bmr = valid ? 10 * w + 6.25 * h - 5 * a + 5 : 0;
+  const activity = ACTIVITY_LEVELS.find((lvl) => lvl.key === activityKey) || ACTIVITY_LEVELS[2];
+  const calories = valid ? bmr * activity.multiplier : 0;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center px-0 sm:px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+      <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-5 pb-7 sm:pb-5 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "#ffffff" }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Flame size={16} color="#ef6a1f" fill="#ffb347" />
+            <span className="text-sm font-bold" style={{ color: C.text }}>Calorie Calculator</span>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+            <X size={15} color={C.text} />
+          </button>
+        </div>
+        <div className="text-xs mb-4" style={{ color: C.textFaint }}>Mifflin-St Jeor formula — estimates your daily calorie needs.</div>
+
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider mb-1 font-semibold" style={{ color: C.textDim }}>Weight (kg)</div>
+            <input
+              type="number" inputMode="decimal" autoFocus value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="70"
+              className="w-full rounded-xl px-2.5 py-2.5 text-sm font-semibold focus:outline-none"
+              style={{ backgroundColor: C.inputBg, border: `1.5px solid ${C.inputBorder}`, color: C.text }}
+            />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider mb-1 font-semibold" style={{ color: C.textDim }}>Height (cm)</div>
+            <input
+              type="number" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="175"
+              className="w-full rounded-xl px-2.5 py-2.5 text-sm font-semibold focus:outline-none"
+              style={{ backgroundColor: C.inputBg, border: `1.5px solid ${C.inputBorder}`, color: C.text }}
+            />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider mb-1 font-semibold" style={{ color: C.textDim }}>Age</div>
+            <input
+              type="number" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} placeholder="25"
+              className="w-full rounded-xl px-2.5 py-2.5 text-sm font-semibold focus:outline-none"
+              style={{ backgroundColor: C.inputBg, border: `1.5px solid ${C.inputBorder}`, color: C.text }}
+            />
+          </div>
+        </div>
+
+        <div className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: C.textDim }}>Activity level</div>
+        <div className="flex flex-col gap-2 mb-5">
+          {ACTIVITY_LEVELS.map((lvl) => {
+            const active = activityKey === lvl.key;
+            return (
+              <button
+                key={lvl.key}
+                onClick={() => setActivityKey(lvl.key)}
+                className="flex items-center justify-between rounded-2xl px-3.5 py-2.5 transition active:scale-[0.98]"
+                style={{ backgroundColor: active ? C.accent : C.chipBg, border: `1.5px solid ${active ? C.accent : C.chipBorder}` }}
+              >
+                <div className="text-left">
+                  <div className="text-xs font-bold" style={{ color: active ? "#ffffff" : C.text }}>{lvl.label}</div>
+                  <div className="text-[10px]" style={{ color: active ? "rgba(255,255,255,0.7)" : C.textFaint }}>{lvl.sub}</div>
+                </div>
+                <div className="text-xs font-bold tabular-nums" style={{ color: active ? "#ffffff" : C.textDim }}>×{lvl.multiplier}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {valid ? (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl p-3" style={{ backgroundColor: C.chipBg, border: `1px solid ${C.chipBorder}` }}>
+              <div className="text-[9px] uppercase tracking-wide" style={{ color: C.textFaint }}>BMR</div>
+              <div className="text-lg font-black tabular-nums" style={{ color: C.text }}>{Math.round(bmr).toLocaleString()}</div>
+              <div className="text-[9px]" style={{ color: C.textFaint }}>kcal/day</div>
+            </div>
+            <div className="rounded-xl p-3" style={{ backgroundColor: C.accent, border: `1px solid ${C.accent}` }}>
+              <div className="text-[9px] uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.7)" }}>Calorie Intake</div>
+              <div className="text-lg font-black tabular-nums" style={{ color: "#ffffff" }}>{Math.round(calories).toLocaleString()}</div>
+              <div className="text-[9px]" style={{ color: "rgba(255,255,255,0.7)" }}>kcal/day</div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs" style={{ color: C.textFaint }}>Enter your weight, height and age to calculate.</div>
         )}
       </div>
     </div>
@@ -1201,62 +1316,159 @@ function formatMusicTime(t) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// Movable floating player — same drag pattern as RestTimer, so it can be dragged out of the
+// way of other buttons instead of permanently blocking a fixed strip along the bottom.
 function MiniMusicPlayer({ track, isPlaying, currentTime, duration, onTogglePlayPause, onSeek, onNext, onPrev, onOpenLibrary }) {
   const [dragTime, setDragTime] = useState(null);
+
+  const panelWidth = 260;
+  const collapsedHeight = 40;
+  const expandedHeight = 118;
+  const [collapsed, setCollapsed] = useState(false);
+  const panelHeight = collapsed ? collapsedHeight : expandedHeight;
+
+  const [pos, setPos] = useState(() => ({
+    x: Math.max(8, (typeof window !== "undefined" ? window.innerWidth : 375) - panelWidth - 14),
+    y: (typeof window !== "undefined" ? window.innerHeight : 700) - expandedHeight - 116,
+  }));
+  const dragRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const movedRef = useRef(false);
+
+  const onDragStart = (clientX, clientY) => {
+    movedRef.current = false;
+    setDragging(true);
+    dragRef.current = { startX: clientX, startY: clientY, originX: pos.x, originY: pos.y };
+  };
+  const onDragMove = useCallback((clientX, clientY) => {
+    if (!dragRef.current) return;
+    const { startX, startY, originX, originY } = dragRef.current;
+    if (Math.abs(clientX - startX) > 4 || Math.abs(clientY - startY) > 4) movedRef.current = true;
+    let x = originX + (clientX - startX);
+    let y = originY + (clientY - startY);
+    x = Math.max(8, Math.min(x, window.innerWidth - panelWidth - 8));
+    y = Math.max(8, Math.min(y, window.innerHeight - panelHeight - 8));
+    setPos({ x, y });
+  }, [panelHeight]);
+  const onDragEnd = () => {
+    setDragging(false);
+    dragRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e) => {
+      if (e.touches && e.touches[0]) onDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      else onDragMove(e.clientX, e.clientY);
+    };
+    const up = () => onDragEnd();
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", up);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", up);
+    };
+  }, [dragging, onDragMove]);
+
+  // Keep the panel on-screen if the window is resized (e.g. orientation change) while it's parked.
+  useEffect(() => {
+    const clamp = () => {
+      setPos((p) => ({
+        x: Math.max(8, Math.min(p.x, window.innerWidth - panelWidth - 8)),
+        y: Math.max(8, Math.min(p.y, window.innerHeight - panelHeight - 8)),
+      }));
+    };
+    window.addEventListener("resize", clamp);
+    return () => window.removeEventListener("resize", clamp);
+  }, [panelHeight]);
+
   if (!track) return null;
   const safeDuration = duration > 0 ? duration : 0;
   const shownTime = dragTime !== null ? dragTime : currentTime;
   const pct = safeDuration > 0 ? Math.min(100, Math.max(0, (shownTime / safeDuration) * 100)) : 0;
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 z-[72] px-3 pb-3">
+    <div
+      className="fixed z-[72] rounded-2xl overflow-hidden select-none"
+      style={{
+        left: pos.x, top: pos.y, width: panelWidth,
+        backgroundColor: "#111111", boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+        touchAction: "none",
+      }}
+    >
+      {/* Drag handle — grab and move this anywhere on screen so it never has to sit on top of other buttons. */}
       <div
-        className="max-w-[480px] mx-auto rounded-2xl overflow-hidden px-3.5 pt-3 pb-2.5"
-        style={{ backgroundColor: "#111111", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
+        className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing"
+        onMouseDown={(e) => { e.preventDefault(); onDragStart(e.clientX, e.clientY); }}
+        onTouchStart={(e) => { const t = e.touches[0]; onDragStart(t.clientX, t.clientY); }}
       >
-        <div className="flex items-center gap-2.5 mb-2.5">
-          <button onClick={onOpenLibrary} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
-              <Music size={14} color="#ffffff" />
-            </div>
-            <span className="text-xs font-semibold truncate" style={{ color: "#ffffff" }}>{track.name}</span>
-          </button>
-          <button onClick={onPrev} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
-            <SkipBack size={15} color="#ffffff" fill="#ffffff" />
-          </button>
-          <button onClick={onTogglePlayPause} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
-            {isPlaying ? <Pause size={15} color="#ffffff" fill="#ffffff" /> : <Play size={15} color="#ffffff" fill="#ffffff" />}
-          </button>
-          <button onClick={onNext} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
-            <SkipForward size={15} color="#ffffff" fill="#ffffff" />
-          </button>
-        </div>
-
-        <div className="relative flex items-center h-4">
-          <div className="absolute left-0 right-0 h-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
-            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: C.accent }} />
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={safeDuration || 0}
-            step={0.1}
-            value={shownTime}
-            onChange={(e) => setDragTime(parseFloat(e.target.value))}
-            onInput={(e) => setDragTime(parseFloat(e.target.value))}
-            onPointerUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
-            onMouseUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
-            onTouchEnd={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
-            className="relative w-full appearance-none bg-transparent music-seek-slider"
-            style={{ height: 16 }}
-            disabled={!safeDuration}
-          />
-        </div>
-        <div className="flex items-center justify-between mt-0.5">
-          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(shownTime)}</span>
-          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(safeDuration)}</span>
-        </div>
+        <GripHorizontal size={14} color="rgba(255,255,255,0.5)" />
       </div>
+
+      <div className="flex items-center gap-2 px-3 pb-2">
+        <button
+          onClick={() => { if (!movedRef.current) onOpenLibrary(); }}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left"
+        >
+          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
+            <Music size={13} color="#ffffff" />
+          </div>
+          <span className="text-xs font-semibold truncate" style={{ color: "#ffffff" }}>{track.name}</span>
+        </button>
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition"
+          style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+        >
+          {collapsed ? <ChevronUp size={13} color="#ffffff" /> : <ChevronDown size={13} color="#ffffff" />}
+        </button>
+      </div>
+
+      {!collapsed && (
+        <div className="px-3.5 pb-2.5">
+          <div className="flex items-center justify-center gap-2.5 mb-2.5">
+            <button onClick={onPrev} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+              <SkipBack size={15} color="#ffffff" fill="#ffffff" />
+            </button>
+            <button onClick={onTogglePlayPause} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+              {isPlaying ? <Pause size={15} color="#ffffff" fill="#ffffff" /> : <Play size={15} color="#ffffff" fill="#ffffff" />}
+            </button>
+            <button onClick={onNext} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition">
+              <SkipForward size={15} color="#ffffff" fill="#ffffff" />
+            </button>
+          </div>
+
+          <div className="relative flex items-center h-4">
+            <div className="absolute left-0 right-0 h-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: C.accent }} />
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={safeDuration || 0}
+              step={0.1}
+              value={shownTime}
+              onChange={(e) => setDragTime(parseFloat(e.target.value))}
+              onInput={(e) => setDragTime(parseFloat(e.target.value))}
+              onPointerUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+              onMouseUp={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+              onTouchEnd={(e) => { const v = parseFloat(e.target.value); onSeek?.(v); setDragTime(null); }}
+              className="relative w-full appearance-none bg-transparent music-seek-slider"
+              style={{ height: 16 }}
+              disabled={!safeDuration}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(shownTime)}</span>
+            <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.5)" }}>{formatMusicTime(safeDuration)}</span>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .music-seek-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -2773,6 +2985,7 @@ export default function WorkoutTracker() {
   const [cardioProfile, setCardioProfile] = useState(null); // { weightKg, heightCm }
   const [cardioProfileLoaded, setCardioProfileLoaded] = useState(false);
   const [showCardioHistory, setShowCardioHistory] = useState(false);
+  const [showBmrCalculator, setShowBmrCalculator] = useState(false);
   const [showCardioProfilePrompt, setShowCardioProfilePrompt] = useState(false);
   const [pendingCardioElapsed, setPendingCardioElapsed] = useState(null);
 
@@ -3764,6 +3977,7 @@ export default function WorkoutTracker() {
           onToggleMute={() => setMuted((m) => !m)}
           onFinishSession={handleFinishCardioSession}
           onOpenHistory={() => setShowCardioHistory(true)}
+          onOpenCalorieCalculator={() => setShowBmrCalculator(true)}
           musicBarActive={!!currentTrack}
         />
       )}
@@ -3776,7 +3990,12 @@ export default function WorkoutTracker() {
           onDeleteAll={() => setCardioHistory([])}
           profile={cardioProfile}
           onEditProfile={() => { setPendingCardioElapsed(null); setShowCardioProfilePrompt(true); }}
+          onOpenCalorieCalculator={() => setShowBmrCalculator(true)}
         />
+      )}
+
+      {showBmrCalculator && (
+        <BmrCalculatorModal onClose={() => setShowBmrCalculator(false)} />
       )}
 
       {showCardioProfilePrompt && (
