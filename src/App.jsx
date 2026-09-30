@@ -240,9 +240,9 @@ const PROGRAM = [
     id: "push1", day: "Sunday", title: "Push 1 + Abs", warmupKey: "push",
     groups: [
       { name: "Chest", exercises: [
-        { id: "p1-fb", name: "Flat Bench Press", sub: "PR Maxxing", sets: 1, reps: "—" },
         { id: "p1-incline", name: "Incline Press", sets: 2, reps: "8-10" },
-        { id: "p1-h2l", name: "High to Low Cable Fly", sets: 2, reps: "8-10" },
+        { id: "p1-h2l", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
+        { id: "p1-fb", name: "Costal Press", sets: 2, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
         { id: "p1-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
@@ -251,7 +251,7 @@ const PROGRAM = [
       ]},
       { name: "Triceps", exercises: [
         { id: "p1-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
-        { id: "p1-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
+        { id: "p1-tpd", name: "SA Tricep Pushdown", sets: 2, reps: "8-10" },
       ]},
       { name: "Abs", exercises: [
         { id: "p1-cc", name: "Cable Crunch", sets: 2, reps: "8-10" },
@@ -265,14 +265,14 @@ const PROGRAM = [
       { name: "Back", exercises: [
         { id: "pl1-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
         { id: "pl1-cgpd", name: "Single Arm Pulldown", sets: 2, reps: "8-10" },
-        { id: "pl1-dbr", name: "Barbell Row", sets: 2, reps: "8-10" },
-        { id: "pl1-sar", name: "Single Arm Row", sets: 2, reps: "8-10" },
+        { id: "pl1-dbr", name: "Wide Grip Pulldown", sets: 2, reps: "8-10" },
+        { id: "pl1-sar", name: "T-Bar Row", sets: 2, reps: "8-10" },
         { id: "pl1-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
-        { id: "pl1-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
-        { id: "pl1-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "pl1-hc", name: "Single Arm Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "pl1-ic", name: "Bayesian Curl", sets: 2, reps: "8-10" },
+        { id: "pl1-pc", name: "SA Preacher Curl", sets: 2, reps: "8-10" },
+        { id: "pl1-hc", name: "SA Hammer Curl", sets: 2, reps: "8-10" },
       ]},
     ],
   },
@@ -284,10 +284,10 @@ const PROGRAM = [
         { id: "lg-lr", name: "Leg Raises", sets: 3, reps: "10-12" },
       ]},
       { name: "Legs", exercises: [
-        { id: "lg-lp", name: "Leg Press", sets: 3, reps: "8-10" },
         { id: "lg-le", name: "Leg Extension", sets: 3, reps: "8-10" },
+        { id: "lg-lp", name: "Smith Machine Squat", sets: 3, reps: "8-10" },
         { id: "lg-rdl", name: "Hamstring Curl", sets: 3, reps: "8-10" },
-        { id: "lg-hc", name: "Calf Raises", sets: 3, reps: "8-10" },
+        { id: "lg-hc", name: "Bulgariam Split Squat", sets: 3, reps: "8-10" },
       ]},
     ],
   },
@@ -295,15 +295,15 @@ const PROGRAM = [
     id: "chestback", day: "Thursday", title: "Chest & Back", warmupKey: "chestback",
     groups: [
       { name: "Chest", exercises: [
-        { id: "cb-fb", name: "Flat Bench Press", sets: 1, reps: "8-10" },
         { id: "cb-incline", name: "Incline Press", sets: 2, reps: "8-10" },
-        { id: "cb-h2l", name: "High to Low Cable Fly", sets: 2, reps: "8-10" },
+        { id: "cb-h2l", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
+        { id: "cb-fb", name: "Costal Press", sets: 2, reps: "8-10" },
       ]},
       { name: "Back", exercises: [
         { id: "cb-pu", name: "Pull Ups", sets: 1, reps: "MAX" },
         { id: "cb-wgpd", name: "Wide Grip Pulldown", sets: 2, reps: "8-10" },
-        { id: "cb-br", name: "Barbell Row", sets: 2, reps: "8-10" },
-        { id: "cb-scr", name: "Seated Cable Row", sets: 2, reps: "8-10" },
+        { id: "cb-br", name: "Single Arm Pulldown", sets: 2, reps: "8-10" },
+        { id: "cb-scr", name: "T-Bar Row", sets: 2, reps: "8-10" },
         { id: "cb-pullover", name: "Lat Pullover", sets: 2, reps: "8-10" },
       ]},
     ],
@@ -317,13 +317,13 @@ const PROGRAM = [
         { id: "sa-rdf", name: "Rear Delt Fly", sets: 2, reps: "8-10" },
       ]},
       { name: "Biceps", exercises: [
-        { id: "sa-ic", name: "Incline Curl", sets: 2, reps: "8-10" },
-        { id: "sa-pc", name: "Preacher Curl", sets: 2, reps: "8-10" },
-        { id: "sa-hc", name: "Hammer Curl", sets: 2, reps: "8-10" },
+        { id: "sa-ic", name: "Bayesian Curl", sets: 2, reps: "8-10" },
+        { id: "sa-pc", name: "SA Preacher Curl", sets: 2, reps: "8-10" },
+        { id: "sa-hc", name: "SA Hammer Curl", sets: 2, reps: "8-10" },
       ]},
       { name: "Triceps", exercises: [
         { id: "sa-ote", name: "SA Overhead Tricep Extension", sets: 2, reps: "8-10" },
-        { id: "sa-tpd", name: "Tricep Pushdown", sets: 2, reps: "8-10" },
+        { id: "sa-tpd", name: "SA Tricep Pushdown", sets: 2, reps: "8-10" },
       ]},
     ],
   },
@@ -333,14 +333,14 @@ const WARMUPS = {
   push: { label: "Push Warm-up", items: [
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
     { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Chest openers x 15", dur: "" },
+    { id: "w3", text: "SHOULDER WARMUP x 10", dur: "" },
     { id: "w4", text: "Push-up x 15", dur: "" },
   ]},
   pull: { label: "Pull Warm-up", items: [
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
     { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
     { id: "w3", text: "Dead hang", dur: "30 sec" },
-    { id: "w4", text: "Lat Stretch", dur: "20 sec" },
+    { id: "w4", text: "Lat stretch", dur: "20 sec" },
   ]},
   legs: { label: "Leg Warm-up", items: [
     { id: "w1", text: "Bodyweight squats x 15", dur: "" },
@@ -351,13 +351,13 @@ const WARMUPS = {
   shoarms: { label: "Shoulder + Arms Warm-up", items: [
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
     { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Shoulder rotations x 10", dur: "" },
+    { id: "w3", text: "SHOULDER WARMUP x 10", dur: "" },
     { id: "w4", text: "Light band curls/Pushdowns x 10", dur: "" },
   ]},
   chestback: { label: "Chest & Back Warm-up", items: [
     { id: "w1", text: "Arm circles x 10 forward + 10 backward", dur: "" },
     { id: "w2", text: "Scapular pull-ups x 10", dur: "" },
-    { id: "w3", text: "Band pull-aparts x 15", dur: "" },
+    { id: "w3", text: "SHOULDER WARMUP x 10", dur: "" },
     { id: "w4", text: "Push-up x 10", dur: "" },
   ]},
 };
