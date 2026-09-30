@@ -241,8 +241,8 @@ const PROGRAM = [
     groups: [
       { name: "Chest", exercises: [
         { id: "p1-incline", name: "Incline Press", sets: 2, reps: "8-10" },
-        { id: "p1-pecdec", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
-        { id: "p1-costal", name: "Costal Press", sets: 2, reps: "8-10" },
+        { id: "p1-h2l", name: "Pec Dec Fly", sets: 2, reps: "8-10" },
+        { id: "p1-fb", name: "Costal Press", sets: 2, reps: "8-10" },
       ]},
       { name: "Shoulders", exercises: [
         { id: "p1-shp", name: "Shoulder Press", sets: 2, reps: "8-10" },
